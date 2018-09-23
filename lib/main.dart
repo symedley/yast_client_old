@@ -90,7 +90,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   TimelinePanel(
                     // key: key,
                     title: "Timeline",
-                    theSavedState: _currentAppStatus,
+                    theSavedStatus: _currentAppStatus,
                   ),
                   AllProjectsPanel(
                     // key: key,

@@ -159,8 +159,8 @@ class _LoginPageState extends State<LoginPage> {
               left: 8.0, top: 80.0, right: 8.0, bottom: 20.0),
           child: Container(
             alignment: Alignment.topCenter,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
+            child: ListView(
+               shrinkWrap: true,
               children: <Widget>[
                 SizedBox(height: 48.0),
                 email,
