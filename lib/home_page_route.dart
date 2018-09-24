@@ -15,6 +15,7 @@ class HomePageRoute extends StatefulWidget {
 
   final String title;
   final SavedAppStatus theSavedState;
+
   @override
   _MyHomePageState createState() => new _MyHomePageState();
 }
@@ -46,20 +47,18 @@ class _MyHomePageState extends State<HomePageRoute> {
   /// Use this a s shortcut to test whatever feature I'm
   /// currently working on.
   String _sDoSomething = 'retrieve records';
+
   void _fabButtonPressed() async {
     debugPrint('============================');
     debugPrint('==========_fabButtonPressed');
 
-    await
-//    _retrieveAllProjects().then((_) {
-//    _retrieveAllFolders();
-    //.then((_) {
-      _retrieveRecords();
-//      });
-//    });
+    await _retrieveAllProjects().then((_) {
+      _retrieveAllFolders().then((_) {
+        _retrieveRecords();
+      });
+    });
     if (this.mounted == true) setState(() {});
     debugPrint('==========END _fabButtonPressed');
-
   }
 
   Future<void> _retrieveAllFolders() async {
@@ -68,12 +67,10 @@ class _MyHomePageState extends State<HomePageRoute> {
     YastApi api = YastApi.getApi();
     widget.theSavedState.counterApiCallsStarted++;
 
-    Map<String, String> folderNameMap =
-    await api.yastRetrieveFolders(widget.theSavedState.getUsername(), widget.theSavedState.hashPasswd);
+    Map<String, String> folderNameMap = await api.yastRetrieveFolders(widget.theSavedState);
     widget.theSavedState.folderIdToName = folderNameMap;
     widget.theSavedState.counterApiCallsCompleted++;
     debugPrint('==========END _retrieveAllFolders');
-
   }
 
   Future<void> _retrieveAllProjects() async {
@@ -82,7 +79,7 @@ class _MyHomePageState extends State<HomePageRoute> {
     YastApi api = YastApi.getApi();
     widget.theSavedState.counterApiCallsStarted++;
     Map<String, String> projectMap =
-    await api.yastRetrieveProjects(widget.theSavedState);
+        await api.yastRetrieveProjects(widget.theSavedState);
     widget.theSavedState.projectIdToName = projectMap;
     widget.theSavedState.counterApiCallsCompleted++;
   }
@@ -95,8 +92,8 @@ class _MyHomePageState extends State<HomePageRoute> {
 
     YastApi api = YastApi.getApi();
     widget.theSavedState.counterApiCallsStarted++;
-    Map<String, dynamic> recs =
-    await api.yastRetrieveRecords(widget.theSavedState.getUsername() , widget.theSavedState.hashPasswd);
+    Map<String, dynamic> recs = await api.yastRetrieveRecords(
+        widget.theSavedState.getUsername(), widget.theSavedState.hashPasswd);
     if (recs != null) {
       widget.theSavedState.records = recs;
       // List<TimelineModel> timelineList = await changeRecordsIntoTimeline(recs);
@@ -142,8 +139,8 @@ class _MyHomePageState extends State<HomePageRoute> {
         context,
         MaterialPageRoute(
           builder: (context) => LoginPage(
-            theSavedState: widget.theSavedState,
-          ),
+                theSavedState: widget.theSavedState,
+              ),
         ));
 
     widget.theSavedState.counterApiCallsCompleted++;
@@ -171,11 +168,11 @@ class _MyHomePageState extends State<HomePageRoute> {
   @override
   Widget build(BuildContext context) {
     var loginButton =
-    FlatButton(onPressed: _loginButtonPressed, child: Text("Login"));
+        FlatButton(onPressed: _loginButtonPressed, child: Text("Login"));
     var resetButton =
-    FlatButton(onPressed: _resetButtonPressed, child: Text("Reset"));
+        FlatButton(onPressed: _resetButtonPressed, child: Text("Reset"));
     var logoutButton =
-    FlatButton(onPressed: _logoutButtonPressed, child: Text("Logout"));
+        FlatButton(onPressed: _logoutButtonPressed, child: Text("Logout"));
     var body;
 
     var rowCountersText = Row(

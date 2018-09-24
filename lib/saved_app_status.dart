@@ -54,9 +54,8 @@ class SavedAppStatus {
   String getProjectNameFromId(String id) {
     if (projectIdToName == null) {
       projectIdToName = {};
-    } else {
-      return projectIdToName[id];
     }
+      return projectIdToName[id];
   }
 
   /// Map Folder ID number (as string) to Folder Name.
@@ -65,9 +64,8 @@ class SavedAppStatus {
   String getFolderNameFromId(String id) {
     if (folderIdToName == null) {
       folderIdToName = {};
-    } else {
-      return folderIdToName[id];
     }
+      return folderIdToName[id];
   }
 
   void _getSharedPrefs() async {

@@ -61,9 +61,10 @@ class _AllFoldersPanelState extends State<AllFoldersPanel> {
     );
   }
 
-  // TODO move to a utility class or file
-  /// Construct a color from a hex code string, of the format #RRGGBB.
-  Color hexToColor(String code) {
-    return new Color(int.parse(code.substring(1, 7), radix: 16) + 0x88000000);
+
+    // TODO move to a utility class or file
+    /// Construct a color from a hex code string, of the format #RRGGBB.
+    Color hexToColor(String code) {
+      return new Color(int.parse(code.substring(1, 7), radix: 16) + 0x88000000);
+    }
   }
-}

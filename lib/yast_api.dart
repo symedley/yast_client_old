@@ -1,9 +1,9 @@
-import 'package:xml/xml.dart' as xml;
+import 'dart:core';
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'yast_parse.dart' as yastParse;
 import 'yast_response.dart';
 import 'yast_http.dart' as yasthttp;
-import 'package:flutter/foundation.dart';
 import 'constants.dart';
 import 'saved_app_status.dart';
 
@@ -71,8 +71,10 @@ class YastApi {
   Future<Map<String, String>> yastRetrieveProjects(
       SavedAppStatus theSavedStatus) async {
     Map<String, String> mapIdToProjects;
-    await _yastSendRetrieveRequest(theSavedStatus.getUsername(),
-            theSavedStatus.hashPasswd, _data_getProjects)
+    await _yastSendRetrieveRequest(
+            theSavedStatus.getUsername(),
+            theSavedStatus.hashPasswd,
+            _data_getProjects)
         .then((yr) async {
       if (yr != null) {
         if (yr.status != YastResponse.yastSuccess) {
@@ -97,7 +99,34 @@ class YastApi {
 
   /// Outside classes call this to retrieve all the project categories
   Future<Map<String, String>> yastRetrieveFolders(
-      String username, String hashPwd) async {}
+      SavedAppStatus theSavedStatus) async {
+    Map<String, String> mapIdToFolders;
+    await _yastSendRetrieveRequest(
+            theSavedStatus.getUsername(),
+            theSavedStatus.hashPasswd,
+            _data_getFolders)
+        .then((yr) async {
+      if (yr != null) {
+        if (yr.status != YastResponse.yastSuccess) {
+          debugPrint("Retrieve Folders failed");
+          debugPrint(yr.statusString);
+          return null;
+        } else {
+          try {
+            mapIdToFolders = await yastParse.getFoldersFrom(yr.body);
+          } catch (e) {
+            debugPrint("exception retrieving projects");
+            return null;
+          }
+        }
+      } else {
+        debugPrint("yastResponse is null $yr");
+        return null;
+      }
+    });
+    return mapIdToFolders;
+  } // yastRetrieveProjects
+
 
   /// Outside classes call this to retrieve all the project categories
   Future<Map<String, dynamic>> yastRetrieveRecords(

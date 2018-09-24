@@ -18,14 +18,15 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  _LoginPageState(this.username){
+  _LoginPageState(this.username) {
     usernameTextController = TextEditingController();
     usernameTextController.text = username;
   }
 
   String username; // saves the latest username to shared preferences.
   final passwdTextController = TextEditingController();
-  TextEditingController usernameTextController ;
+  TextEditingController usernameTextController;
+
   bool _loginInProgress;
 
   @override
@@ -67,7 +68,7 @@ class _LoginPageState extends State<LoginPage> {
 
     final loginButton = Padding(
       padding: EdgeInsets.symmetric(vertical: 16.0),
-      child: MaterialButton(
+      child:  MaterialButton(
         minWidth: 200.0,
         height: 42.0,
         onPressed: () async {
@@ -126,8 +127,17 @@ class _LoginPageState extends State<LoginPage> {
           }
           //Navigator.of(context).pop(retval);
         },
-        color: Colors.lightBlueAccent,
-        child: Text('Log In', style: TextStyle(color: Colors.white)),
+        color: Colors.transparent,
+
+        child: Container(
+          decoration: BoxDecoration(
+
+            color: Colors.lightBlueAccent,
+            borderRadius: BorderRadius.all(Radius.circular(10.0)),
+          ),
+          padding: const EdgeInsets.all(8.0),
+          child: Text('Log In', style: TextStyle(color: Colors.white)),
+        ),
       ),
     );
 
@@ -160,7 +170,7 @@ class _LoginPageState extends State<LoginPage> {
           child: Container(
             alignment: Alignment.topCenter,
             child: ListView(
-               shrinkWrap: true,
+              shrinkWrap: true,
               children: <Widget>[
                 SizedBox(height: 48.0),
                 email,

@@ -71,8 +71,8 @@ class _AllProjectsPanelState extends State<AllProjectsPanel> {
     );
   }
 
-  // ignore: unused_field
   // Project _currentProject;
+  // ignore: unused_field
   String _currentProject;
 
   /// _onProjectTap - user selects current project to do something with
