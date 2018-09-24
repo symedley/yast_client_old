@@ -2,11 +2,17 @@ import 'package:xml/xml.dart' as xml;
 import 'YastResonse.dart';
 import 'dart:async';
 import 'yast_parse.dart';
-import 'YastHttp.dart' as yasthttp;
+import 'yast_http.dart' as yasthttp;
 import 'package:flutter/foundation.dart';
+
 
 class YastApi {
   static YastApi theSingleton;
+
+  static const String _timeFromParam = "timeFrom";
+  static const String _data_getRecords = "data.getRecords";
+  static const String _data_getFolders = "data.getFolders";
+  static const String _data_getProjects = "data.getProjects";
 
   int sendCounter;
   int responseCounter;
@@ -67,7 +73,34 @@ class YastApi {
   Future<Map<String, String>> yastRetrieveFolders(String hashPwd) async {}
 
   /// Outside classes call this to retrieve all the project categories
-  Future<Map<String, dynamic>> yastRetrieveRecords(String hashPwd) async {}
+  Future<Map<String, dynamic>> yastRetrieveRecords(String hashPwd) async {
+    debugPrint('==========yastRetrieveRcords');
+
+    String optParams = "<" + _timeFromParam + ">today</" + _timeFromParam + ">";
+    YastResponse yr =
+        await _yastSendRetrieveRequest(hashPwd, _data_getRecords, optParams)
+            .timeout(Duration(seconds: 5));
+
+    Map<String, dynamic> retval;
+    if (yr != null) {
+      if (yr.status != YastResponse.yastSuccess) {
+        debugPrint("Retrieve records failed");
+        debugPrint(yr.statusString);
+        return null;
+      } else {
+        try {
+          retval = await getRecordsFrom(yr.body);
+        } catch (e) {
+          debugPrint("exception retrieving records");
+          throw (e);
+        }
+      }
+      return retval;
+    } else {
+      debugPrint("yastResponse is null $yr");
+      return null;
+    }
+  } // yastRetrieveRecords
 
   /// Form a retrieve request and post it
   Future<YastResponse> _yastSendRetrieveRequest(
