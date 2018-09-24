@@ -1,5 +1,6 @@
 # Google
 googleservices.json
+GoogleService-Info.plist
 
 # Miscellaneous
 *.class

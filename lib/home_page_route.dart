@@ -52,9 +52,9 @@ class _MyHomePageState extends State<HomePageRoute> {
 
     await
 //    _retrieveAllProjects().then((_) {
-    _retrieveAllFolders();
+//    _retrieveAllFolders();
     //.then((_) {
-    //  _retrieveRecords();
+      _retrieveRecords();
 //      });
 //    });
     if (this.mounted == true) setState(() {});
@@ -69,7 +69,7 @@ class _MyHomePageState extends State<HomePageRoute> {
     widget.theSavedState.counterApiCallsStarted++;
 
     Map<String, String> folderNameMap =
-    await api.yastRetrieveFolders(widget.theSavedState.hashPasswd);
+    await api.yastRetrieveFolders(widget.theSavedState.getUsername(), widget.theSavedState.hashPasswd);
     widget.theSavedState.folderIdToName = folderNameMap;
     widget.theSavedState.counterApiCallsCompleted++;
     debugPrint('==========END _retrieveAllFolders');
@@ -82,7 +82,7 @@ class _MyHomePageState extends State<HomePageRoute> {
     YastApi api = YastApi.getApi();
     widget.theSavedState.counterApiCallsStarted++;
     Map<String, String> projectMap =
-    await api.yastRetrieveProjects(widget.theSavedState.hashPasswd);
+    await api.yastRetrieveProjects(widget.theSavedState);
     widget.theSavedState.projectIdToName = projectMap;
     widget.theSavedState.counterApiCallsCompleted++;
   }
@@ -96,7 +96,7 @@ class _MyHomePageState extends State<HomePageRoute> {
     YastApi api = YastApi.getApi();
     widget.theSavedState.counterApiCallsStarted++;
     Map<String, dynamic> recs =
-    await api.yastRetrieveRecords(widget.theSavedState.hashPasswd);
+    await api.yastRetrieveRecords(widget.theSavedState.getUsername() , widget.theSavedState.hashPasswd);
     if (recs != null) {
       widget.theSavedState.records = recs;
       // List<TimelineModel> timelineList = await changeRecordsIntoTimeline(recs);
@@ -145,8 +145,6 @@ class _MyHomePageState extends State<HomePageRoute> {
             theSavedState: widget.theSavedState,
           ),
         ));
-
-    // var hashPasswd = await Navigator.of(context).push(loginRoute);
 
     widget.theSavedState.counterApiCallsCompleted++;
 

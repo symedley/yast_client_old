@@ -1,10 +1,11 @@
 import 'package:xml/xml.dart' as xml;
-import 'YastResonse.dart';
 import 'dart:async';
-import 'yast_parse.dart';
+import 'yast_parse.dart' as yastParse;
+import 'yast_response.dart';
 import 'yast_http.dart' as yasthttp;
 import 'package:flutter/foundation.dart';
-
+import 'constants.dart';
+import 'saved_app_status.dart';
 
 class YastApi {
   static YastApi theSingleton;
@@ -16,7 +17,6 @@ class YastApi {
 
   int sendCounter;
   int responseCounter;
-  String _hashPassword;
 
   YastApi() {
     sendCounter = 0;
@@ -48,18 +48,19 @@ class YastApi {
         _close_request_string;
     YastResponse yr = await yasthttp.sendToYastApi(xmlToLogin);
 
+    String hashPw;
     if (yr != null) {
       if (yr.status == YastResponse.yastLoginfailure) {
-        _hashPassword = null;
+        hashPw = null;
       } else {
         try {
-          _hashPassword = yr.body.findAllElements("hash").first.text;
+          hashPw = yr.body.findAllElements("hash").first.text;
         } catch (e) {
           debugPrint("exception logging in and getting hash");
           return null;
         }
       }
-      return _hashPassword;
+      return hashPw;
     } else {
       debugPrint("yastResponse is null $yr");
       return null;
@@ -67,19 +68,46 @@ class YastApi {
   }
 
   /// Outside classes call this to retrieve all the project categories
-  Future<Map<String, String>> yastRetrieveProjects(String hashPwd) async {}
+  Future<Map<String, String>> yastRetrieveProjects(
+      SavedAppStatus theSavedStatus) async {
+    Map<String, String> mapIdToProjects;
+    await _yastSendRetrieveRequest(theSavedStatus.getUsername(),
+            theSavedStatus.hashPasswd, _data_getProjects)
+        .then((yr) async {
+      if (yr != null) {
+        if (yr.status != YastResponse.yastSuccess) {
+          debugPrint("Retrieve projects failed");
+          debugPrint(yr.statusString);
+          return null;
+        } else {
+          try {
+            mapIdToProjects = await yastParse.getProjectsFrom(yr.body);
+          } catch (e) {
+            debugPrint("exception retrieving projects");
+            return null;
+          }
+        }
+      } else {
+        debugPrint("yastResponse is null $yr");
+        return null;
+      }
+    });
+    return mapIdToProjects;
+  } // yastRetrieveProjects
 
   /// Outside classes call this to retrieve all the project categories
-  Future<Map<String, String>> yastRetrieveFolders(String hashPwd) async {}
+  Future<Map<String, String>> yastRetrieveFolders(
+      String username, String hashPwd) async {}
 
   /// Outside classes call this to retrieve all the project categories
-  Future<Map<String, dynamic>> yastRetrieveRecords(String hashPwd) async {
+  Future<Map<String, dynamic>> yastRetrieveRecords(
+      String username, String hashPwd) async {
     debugPrint('==========yastRetrieveRcords');
 
     String optParams = "<" + _timeFromParam + ">today</" + _timeFromParam + ">";
-    YastResponse yr =
-        await _yastSendRetrieveRequest(hashPwd, _data_getRecords, optParams)
-            .timeout(Duration(seconds: 5));
+    YastResponse yr = await _yastSendRetrieveRequest(
+            username, hashPwd, _data_getRecords, optParams)
+        .timeout(Duration(seconds: Constants.HTTP_TIMEOUT));
 
     Map<String, dynamic> retval;
     if (yr != null) {
@@ -89,7 +117,7 @@ class YastApi {
         return null;
       } else {
         try {
-          retval = await getRecordsFrom(yr.body);
+          retval = await yastParse.getRecordsFrom(yr.body);
         } catch (e) {
           debugPrint("exception retrieving records");
           throw (e);
@@ -130,9 +158,4 @@ class YastApi {
     return await yasthttp.sendToYastApi(xmlToSend);
   } //_yastSendRetrieveRequest
 
-  /// Brute force delete all documents in a collection of the given name.
-  /// A utility function.
-  Future<void> _deleteAllDocsInCollection(String collectionName) async {}
-
-  Future<void> _putRecordsInDatabase(Map<String, dynamic> recs) async {}
 }

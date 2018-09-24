@@ -3,7 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:xml/xml.dart' as xml;
 import 'Model/record.dart';
 import 'Model/yast_db.dart';
+import 'Model/project.dart';
+import 'Model/folder.dart';
+import 'Model/yast_object.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'constants.dart';
 
 enum TypeXmlObject {
   Project,
@@ -13,13 +17,13 @@ enum TypeXmlObject {
 const String projectStr = 'project'; //plural
 const String folderStr = 'folder';
 
-Future<Map<String, String>> _getFoldersFrom(xml.XmlDocument xmlBody) async {
+Future<Map<String, String>> getFoldersFrom(xml.XmlDocument xmlBody) async {
   debugPrint('-------------********** _getFoldersFrom');
 
   List<xml.XmlElement> xmlObjs = await _getXmlObjectsFrom(xmlBody, folderStr);
   Map<String, String> mapFolderIdName = new Map();
-  var retval = await _getYastObjectsFrom(
-      mapFolderIdName, TypeXmlObject.Folder, xmlObjs);
+  var retval =
+      await _getYastObjectsFrom(mapFolderIdName, TypeXmlObject.Folder, xmlObjs);
   debugPrint('-------------**********END  _getFoldersFrom');
   return retval;
 }
@@ -39,8 +43,7 @@ List<xml.XmlElement> _getXmlObjectsFrom(
   return xmlObjectList;
 }
 
-
-Future<Map<String, String>> _getProjectsFrom(xml.XmlDocument xmlBody) async {
+Future<Map<String, String>> getProjectsFrom(xml.XmlDocument xmlBody) async {
   List<xml.XmlElement> xmlObjs = _getXmlObjectsFrom(xmlBody, projectStr);
   Map<String, String> mapProjectIdName = new Map();
   return await _getYastObjectsFrom(
@@ -67,22 +70,6 @@ Future<Map<String, String>> _getProjectsFrom(xml.XmlDocument xmlBody) async {
 //  isRunning : 1 if the record is running. In that case endTime has not been set yet. Else 0
 ///getRecordsFrom
 ///
-// id(optional): Comma separated list of requested record identifiers
-//  user(required): Yast user
-//  hash(required): Yast user hash
-//  parentId(optional) : Comma separated list of Ids of the project requested records belong to.
-//  typeId(optional) : Id of the recordType object describing this record
-//  timeFrom(optional) : Time of creation [seconds since 1st of January 1970]
-//  timeTo(optional) : Time of last update [seconds since 1st of January 1970]
-//  userId(optional) : Only relevant for usage through Entity API as Organization. Comma separated list of user identifiers for requested records
-//
-//  Work Record
-//  A record is a work record if the typeId field is 1. A work record has the following variables in the variables array :
-//
-//  startTime : Start-time of record [seconds since 1st of January 1970]
-//  endTime : End-time of record [seconds since 1st of January 1970]
-//  comment : String with comment for record
-//  isRunning : 1 if the record is running. In that case endTime has not been set yet. Else 0
 Future<Map<String, dynamic>> getRecordsFrom(xml.XmlDocument xmlBody) async {
   //return _getXmlObjectsFrom(xmlBody, "record");
   debugPrint('==========_getRecordsFrom');
@@ -125,14 +112,17 @@ Future<void> _putRecordsInDatabase(Map<String, dynamic> recs) async {
       debugPrint("====mid way store records count: $counter");
     }
     DocumentReference dr =
-    Firestore.instance.document('${YastDb.DbRecordsTableName}/${rec.id}');
+        Firestore.instance.document('${YastDb.DbRecordsTableName}/${rec.id}');
     batch.setData(dr, rec.yastObjectFieldsMap);
 
     counter++;
   });
   debugPrint("============== store records count: $counter");
 
-  await batch.commit().timeout(Duration(seconds: 30)).then((it) {
+  await batch
+      .commit()
+      .timeout(Duration(seconds: Constants.HTTP_TIMEOUT))
+      .then((it) {
     debugPrint('records batch result $it');
   }).whenComplete(() {
     debugPrint('records batch complete');
@@ -160,7 +150,7 @@ Future<void> _deleteAllDocsInCollection(String collectionName) async {
 
       Query querySubCollections = await snap.reference.collection('children');
       QuerySnapshot subcollectionSnap =
-      await querySubCollections.getDocuments();
+          await querySubCollections.getDocuments();
       subcollectionSnap.documents.forEach((subSnap) async {
         await subSnap.reference.delete();
       });
@@ -179,5 +169,55 @@ Future<Map<String, String>> _getYastObjectsFrom(
     Map<String, String> mapIdToYastObjects,
     TypeXmlObject whichOne,
     //   String tableName,
-    List<xml.XmlElement> xmlObjs) async {}
+    List<xml.XmlElement> xmlObjs) async {
+  debugPrint("---------_getYastObjectsFrom");
 
+  String tableName;
+  tableName = (whichOne == TypeXmlObject.Project)
+      ? YastDb.DbProjectsTableName
+      : YastDb.DbFoldersTableName;
+
+  var oldMap = new List.from(mapIdToYastObjects.keys);
+
+  List<YastObject> objects = new List<YastObject>();
+
+  xmlObjs.forEach((it) {
+    var obj;
+
+    if (whichOne == TypeXmlObject.Folder) {
+      obj = new Folder.fromXml(it);
+    } else {
+      obj = new Project.fromXml(it);
+    }
+    mapIdToYastObjects[obj.id] = obj.name;
+    objects.add(obj);
+    oldMap.remove(obj.id);
+  });
+  debugPrint(objects.toString());
+
+  WriteBatch batch = Firestore.instance.batch();
+  objects.forEach((obj) async {
+    DocumentReference dr = Firestore.instance.document('$tableName/${obj.id}');
+    batch.setData(dr, {
+      YastObject.ID: obj.id,
+      YastObject.NAME: obj.name,
+      YastObject.DESCRIPTION: obj.description,
+      YastObject.PRIMARYCOLOR: obj.primaryColor,
+      YastObject.PARENTID: obj.parentId,
+      YastObject.PRIVILEGES: obj.privileges,
+      YastObject.TIMECREATED: obj.timeCreated,
+      YastObject.CREATOR: obj.creator
+    });
+  });
+  await batch.commit().timeout(Duration(seconds: 30)).then((it) {
+    debugPrint('batch $it');
+  }).whenComplete(() {
+    debugPrint('batch complete');
+  });
+//    if (whichOne == TypeXmlObject.Folder) {
+//      await _arrangeFoldersInHeirarchy();
+//    }
+  debugPrint("---------END _getYastObjectsFrom");
+
+  return mapIdToYastObjects;
+} //_getYastObjectsFrom
