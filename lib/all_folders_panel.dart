@@ -4,12 +4,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'saved_app_status.dart';
 import 'display_login_status.dart';
 import 'Model/yast_db.dart';
+import 'constants.dart';
 
 class AllFoldersPanel extends StatefulWidget {
   AllFoldersPanel({Key key, this.title, @required this.theSavedStatus})
       : super(key: key);
 
-  static Color color = Colors.cyan[200];
+  static Color panelBackgroundColor = Colors.grey[200];
   final title;
   final SavedAppStatus theSavedStatus;
 
@@ -31,12 +32,12 @@ class _AllFoldersPanelState extends State<AllFoldersPanel> {
       savedAppStatus: widget.theSavedStatus,
       context: context,
       child: Container(
-        color: AllFoldersPanel.color,
-        constraints: BoxConstraints.loose(Size(200.0, 400.0)),
+        color: AllFoldersPanel.panelBackgroundColor,
+        constraints: BoxConstraints.tight(Size(200.0, 400.0)),
         padding: const EdgeInsets.only(
-            left: 8.0, top: 8.0, right: 8.0, bottom: 48.0),
+            left: 0.0, top: 28.0, right: 0.0, bottom: 48.0),
         child: new Scaffold(
-          backgroundColor: AllFoldersPanel.color,
+          backgroundColor: AllFoldersPanel.panelBackgroundColor,
           body: new StreamBuilder(
               stream: Firestore.instance
                   .collection(YastDb.DbFoldersTableName)
@@ -45,15 +46,34 @@ class _AllFoldersPanelState extends State<AllFoldersPanel> {
                 if (!snapshot.hasData) return const Text('Loading...');
                 return new ListView.builder(
                     itemCount: snapshot.data.documents.length,
-                    padding: const EdgeInsets.all(10.0),
+//                    padding: const EdgeInsets.all(10.0),
                     //itemExtent: 25.0,
                     itemBuilder: (context, index) {
                       DocumentSnapshot ds = snapshot.data.documents[index];
-                      return ExpansionTile(
-                        title: Text(ds['name']),
-                        backgroundColor: hexToColor(ds['primaryColor']),
+                      return Material(
+//                        shape:  RoundedRectangleBorder(
+//                          borderRadius: BorderRadius.all(
+//                            Radius.circular(Constants.BORDERRADIUS),
+//                          ),
+//                        ),
+//                        color: hexToColor(ds('primaryColor'), transparency: 0x99000000),
+                        color: hexToColor(ds['primaryColor'],
+                            transparency: 0x99000000),
+//                        borderRadius: BorderRadius.all(
+//                            Radius.circular(Constants.BORDERRADIUS)),
+                        child: ExpansionTile(
+                          title: Text(ds['name']),
+                          children: <Widget>[
+                            new ListTile(
+                              subtitle:
+                                  Text('primaryColor: ${ds['primaryColor']}'),
+                            )
+                          ],
+                          backgroundColor: hexToColor(ds['primaryColor'],
+                              transparency: 0x88000000),
+//                          backgroundColor: Colors.white,
+                        ),
                       );
-                      //return new Text(" ${ds['name']} ${ds['id']}");
                     });
               }),
         ),
@@ -61,10 +81,11 @@ class _AllFoldersPanelState extends State<AllFoldersPanel> {
     );
   }
 
-
-    // TODO move to a utility class or file
-    /// Construct a color from a hex code string, of the format #RRGGBB.
-    Color hexToColor(String code) {
-      return new Color(int.parse(code.substring(1, 7), radix: 16) + 0x88000000);
-    }
+  // TODO move to a utility class or file
+  /// Construct a color from a hex code string, of the format #RRGGBB.
+  /// 0x88 is the transparency
+  Color hexToColor(String code, {transparency: int}) {
+    return new Color(int.parse(code.substring(1, 7), radix: 16) +
+        (transparency ??= 0x88000000) - code.length);
   }
+}

@@ -69,6 +69,19 @@ class _MyHomePageState extends State<MyHomePage> {
           primaryColor: Colors.blueGrey,
           accentColor: Colors.blueAccent,
           errorColor: Colors.red[700],
+          buttonColor: Colors.lightBlueAccent,
+          textTheme: TextTheme(
+            body1: TextStyle(
+              fontSize: 16.0,
+            )
+          ),
+          buttonTheme: ButtonThemeData(
+            shape: RoundedRectangleBorder(borderRadius:
+                BorderRadius.all(
+                  Radius.circular(32.0),
+                )),
+          ),
+
         ),
         routes: routes,
         home: DefaultTabController(
@@ -81,33 +94,29 @@ class _MyHomePageState extends State<MyHomePage> {
                 bottom: TabBar(tabs: myTabs),
               ),
             ),
-            body: TabBarView(
-                children: [
-                  HomePageRoute(
-                    title: 'Yast Home Page',
-                    theSavedState: _currentAppStatus,
-                  ),
-                  TimelinePanel(
-                    // key: key,
-                    title: "Timeline",
-                    theSavedStatus: _currentAppStatus,
-                  ),
-                  AllProjectsPanel(
-                    // key: key,
-                      title: "All my projects",
-                      theSavedStatus: _currentAppStatus),
-                  AllFoldersPanel(
-                    // key: key,
-                      theSavedStatus: _currentAppStatus),
+            body: TabBarView(children: [
+              HomePageRoute(
+                title: 'Yast Home Page',
+                theSavedState: _currentAppStatus,
+              ),
+              TimelinePanel(
+                // key: key,
+                title: "Timeline",
+                theSavedStatus: _currentAppStatus,
+              ),
+              AllProjectsPanel(
+                  // key: key,
+                  title: "All my projects",
+                  theSavedStatus: _currentAppStatus),
+              AllFoldersPanel(
+                  // key: key,
+                  theSavedStatus: _currentAppStatus),
 //              DatabasePanel(
 //                 key: key,
 //                title: "Database panel",
 //                )
-                ]
-            ),
-
+            ]),
           ),
-        )
-    );
+        ));
   }
 }

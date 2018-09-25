@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'saved_app_status.dart';
 import 'yast_api.dart';
+import 'constants.dart';
 
 class LoginPage extends StatefulWidget {
   LoginPage({Key key, @required this.theSavedState});
@@ -48,10 +49,67 @@ class _LoginPageState extends State<LoginPage> {
       initialValue: null,
       decoration: InputDecoration(
         hintText: 'Email',
-        contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(32.0)),
+        contentPadding: EdgeInsets.all(Constants.EDGEINSETS),
+        // fromLTRB(20.0, 10.0, 20.0, 10.0),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(Constants.BORDERRADIUS)),
       ),
     );
+
+    void _onTap() async {
+      var usernameTextInput = Text(usernameTextController.text);
+      try {
+        username = usernameTextInput.data;
+      } catch (e) {
+        username = '';
+      }
+      widget.theSavedState.setUsername(username);
+      if (_loginInProgress != true) {
+        try {
+          var passwdTextInput = Text(passwdTextController.text);
+          var pw = passwdTextInput.data;
+          final snackBar = SnackBar(
+            content: Text('Please wait...'),
+            action: SnackBarAction(
+              label: 'OK',
+              onPressed: () {
+                // Some code to undo the change!
+              },
+            ),
+          );
+          Scaffold.of(_scaffoldContext).showSnackBar(snackBar);
+
+          _loginInProgress = true;
+          String retval = await attemptLogin(pw);
+
+          if (retval != null) {
+            _loginInProgress = false;
+            Navigator.pop(context, retval);
+          } else {
+            // retval is null, so the HTTP login request failed for unknown reason
+            _loginInProgress = false;
+
+            final snackBar = SnackBar(
+              content: Text('Login failed'),
+              duration: Duration(seconds: 10),
+              action: SnackBarAction(
+                label: 'OK',
+                onPressed: () {},
+              ),
+            );
+            Scaffold.of(_scaffoldContext).showSnackBar(snackBar);
+          }
+        } on TimeoutException catch (e) {
+          debugPrint("Login timed out: $e");
+          showSnackbar(_scaffoldContext, 'Login timed out.');
+          _loginInProgress = false;
+        }
+      } else {
+        debugPrint('Login already in progress when login button clicked');
+        showSnackbar(_scaffoldContext, 'Login already in progress.');
+      }
+      //Navigator.of(context).pop(retval);
+    } // _onTap method for InkWell
 
     final password = TextFormField(
       controller: passwdTextController,
@@ -61,82 +119,35 @@ class _LoginPageState extends State<LoginPage> {
       obscureText: true,
       decoration: InputDecoration(
         hintText: 'Password',
-        contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(32.0)),
+        contentPadding: EdgeInsets.all(Constants.EDGEINSETS),
+        // fromLTRB(20.0, 10.0, 20.0, 10.0),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(Constants.BORDERRADIUS)),
       ),
     );
 
-    final loginButton = Padding(
-      padding: EdgeInsets.symmetric(vertical: 16.0),
-      child:  MaterialButton(
-        minWidth: 200.0,
-        height: 42.0,
-        onPressed: () async {
-          var usernameTextInput = Text(usernameTextController.text);
-          try {
-            username = usernameTextInput.data;
-          } catch (e) {
-            username = '';
-          }
-
-          widget.theSavedState.setUsername(username);
-
-          if (_loginInProgress != true) {
-            try {
-              var passwdTextInput = Text(passwdTextController.text);
-              var pw = passwdTextInput.data;
-              final snackBar = SnackBar(
-                content: Text('Please wait...'),
-                action: SnackBarAction(
-                  label: 'OK',
-                  onPressed: () {
-                    // Some code to undo the change!
-                  },
-                ),
-              );
-              Scaffold.of(_scaffoldContext).showSnackBar(snackBar);
-
-              _loginInProgress = true;
-              String retval = await attemptLogin(pw);
-
-              if (retval != null) {
-                _loginInProgress = false;
-                Navigator.pop(context, retval);
-              } else {
-                // retval is null, so the HTTP login request failed for unknown reason
-                _loginInProgress = false;
-
-                final snackBar = SnackBar(
-                  content: Text('Login failed'),
-                  duration: Duration(seconds: 10),
-                  action: SnackBarAction(
-                    label: 'OK',
-                    onPressed: () {},
-                  ),
-                );
-                Scaffold.of(_scaffoldContext).showSnackBar(snackBar);
-              }
-            } on TimeoutException catch (e) {
-              debugPrint("Login timed out: $e");
-              showSnackbar(_scaffoldContext, 'Login timed out.');
-              _loginInProgress = false;
-            }
-          } else {
-            debugPrint('Login already in progress when login button clicked');
-            showSnackbar(_scaffoldContext, 'Login already in progress.');
-          }
-          //Navigator.of(context).pop(retval);
-        },
-        color: Colors.transparent,
-
-        child: Container(
-          decoration: BoxDecoration(
-
-            color: Colors.lightBlueAccent,
-            borderRadius: BorderRadius.all(Radius.circular(10.0)),
+    final loginButton = Material(
+      color: Colors.transparent,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.lightBlueAccent,
+          borderRadius:
+              BorderRadius.all(Radius.circular(Constants.BORDERRADIUS)),
+        ),
+        padding: const EdgeInsets.all(Constants.EDGEINSETS),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(Constants.BORDERRADIUS),
+          highlightColor: Colors.yellow,
+          splashColor: Colors.white,
+          onTap: _onTap,
+          child: Center(
+            child: Text(
+              'Log In',
+              style: TextStyle(
+                  fontSize: Theme.of(context).textTheme.body1.fontSize,
+                  color: Colors.white),
+            ),
           ),
-          padding: const EdgeInsets.all(8.0),
-          child: Text('Log In', style: TextStyle(color: Colors.white)),
         ),
       ),
     );
