@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'saved_app_status.dart';
 import 'display_login_status.dart';
 import 'Model/yast_db.dart';
-import 'constants.dart';
+import 'utilities.dart';
 
 class AllFoldersPanel extends StatefulWidget {
   AllFoldersPanel({Key key, this.title, @required this.theSavedStatus})
@@ -84,8 +84,8 @@ class _AllFoldersPanelState extends State<AllFoldersPanel> {
   // TODO move to a utility class or file
   /// Construct a color from a hex code string, of the format #RRGGBB.
   /// 0x88 is the transparency
-  Color hexToColor(String code, {transparency: int}) {
-    return new Color(int.parse(code.substring(1, 7), radix: 16) +
-        (transparency ??= 0x88000000) - code.length);
-  }
+//  Color hexToColor(String code, {transparency: int}) {
+//    return new Color(int.parse(code.substring(1, 7), radix: 16) +
+//        (transparency ??= 0x88000000) - code.length);
+//  }
 }
