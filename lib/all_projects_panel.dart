@@ -7,6 +7,7 @@ import 'display_login_status.dart';
 import 'saved_app_status.dart';
 import 'Model/yast_db.dart';
 import 'Model/project_tile.dart';
+import 'utilities.dart';
 
 class AllProjectsPanel extends StatefulWidget {
   AllProjectsPanel({Key key, this.title, @required this.theSavedStatus})
@@ -90,12 +91,5 @@ class _AllProjectsPanelState extends State<AllProjectsPanel> {
           },
         ));
     Scaffold.of(context).showSnackBar(snackBar);
-  }
-
-
-  // TODO move to a utility class or file
-  /// Construct a color from a hex code string, of the format #RRGGBB.
-  Color hexToColor(String code) {
-    return new Color(int.parse(code.substring(1, 7), radix: 16) + 0x88000000);
   }
 }
