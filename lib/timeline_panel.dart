@@ -12,7 +12,7 @@ class TimelinePanel extends StatefulWidget {
   final String title;
 
   static const Color color =
-  const Color(0xFFF9FBE7); // why can't i say Colors.lime[50]?
+      const Color(0xFFF9FBE7); // why can't i say Colors.lime[50]?
 
   @override
   _TimelinePanelState createState() =>
@@ -28,48 +28,47 @@ class _TimelinePanelState extends State {
 
   @override
   Widget build(BuildContext context) {
-    Stream<QuerySnapshot> sqs = Firestore.instance.collection(
-        YastDb.DbRecordsTableName)
-        .snapshots();
-    CollectionReference idToProject = Firestore.instance.collection(
-        YastDb.DbIdToProjectTableName);
+    Stream<QuerySnapshot> sqs =
+        Firestore.instance.collection(YastDb.DbRecordsTableName).snapshots();
+    CollectionReference idToProject =
+        Firestore.instance.collection(YastDb.DbIdToProjectTableName);
     return displayLoginStatus(
-        savedAppStatus: theSavedStatus,
-        context: context,
-        child: Container(
-            color: TimelinePanel.color,
-            constraints: BoxConstraints.loose(Size(200.0, 400.0)),
-            padding: const EdgeInsets.only(
-                left: 8.0, top: 8.0, right: 8.0, bottom: 48.0),
-            child: new Scaffold(
-              resizeToAvoidBottomPadding: true,
-              backgroundColor: TimelinePanel.color,
-              body:
-              new StreamBuilder(
-                  stream:
-                  sqs,
-
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) return const Text('Loading...');
-                    return new ListView.builder(
-                        itemCount: snapshot.data.documents.length,
-                        padding: const EdgeInsets.only(top: 10.0),
-                        itemExtent: 25.0,
-                        itemBuilder: (context, index) {
-                          DocumentSnapshot ds =
-                          snapshot.data.documents[index];
-                          String name = theSavedStatus
-                              .getProjectNameFromId(ds['project']);
-                          idToProject.document(ds['project']).get().then( (DocumentSnapshot ds2) {
-                            ds2.data.entries;
-//                      debugPrint(" Name of project: $name ID of project: ${ds['id']}");
-                            return new Text(
-                              " $name ${ds['id']}",
-                              overflow: TextOverflow.ellipsis,
-                            );
-                          });
-                        });
-                  }),
-            )));
+      savedAppStatus: theSavedStatus,
+      context: context,
+      child: Container(
+        color: TimelinePanel.color,
+        constraints: BoxConstraints.loose(Size(200.0, 400.0)),
+        padding: const EdgeInsets.only(
+            left: 8.0, top: 8.0, right: 8.0, bottom: 48.0),
+        child: new Scaffold(
+          resizeToAvoidBottomPadding: true,
+          backgroundColor: TimelinePanel.color,
+          body: new StreamBuilder(
+              stream: sqs,
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) return const Text('Loading...');
+                return new ListView.builder(
+                    itemCount: snapshot.data.documents.length,
+                    padding: const EdgeInsets.only(top: 10.0),
+                    itemExtent: 25.0,
+                    itemBuilder: (context, index) {
+                      DocumentSnapshot ds = snapshot.data.documents[index];
+//                      String name =
+//                          theSavedStatus.getProjectNameFromId(ds['project']);
+                      idToProject
+                          .document(ds['project'])
+                          .get()
+                          .then((DocumentSnapshot ds2) {
+                        String nm = ds2.data.values.first;
+                        return new Text(
+                          " $nm ${ds['id']}",
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      });
+                    });
+              }),
+        ),
+      ),
+    );
   }
 }
