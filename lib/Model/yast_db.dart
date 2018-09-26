@@ -4,6 +4,7 @@ class YastDb {
   static const DbProjectsTableName = "projects";
   static const DbFoldersTableName = "folders";
   static const DbRecordsTableName = "records";
+  static const DbIdToProjectTableName = 'idToProjectMap';
 
 
   static const int BATCHLIMIT = 500;

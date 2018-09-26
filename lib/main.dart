@@ -97,7 +97,7 @@ class _MyHomePageState extends State<MyHomePage> {
             body: TabBarView(children: [
               HomePageRoute(
                 title: 'Yast Home Page',
-                theSavedState: _currentAppStatus,
+                theSavedStatus: _currentAppStatus,
               ),
               TimelinePanel(
                 // key: key,

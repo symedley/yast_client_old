@@ -100,6 +100,7 @@ Future<void> _putRecordsInDatabase(Map<String, dynamic> recs) async {
   // so we won't end up with no records if data connection is lost. (I hope)
   debugPrint('==========_putRecordsInDatabase');
 
+  // TODO chg this to only delete old keys = orphans
   await _deleteAllDocsInCollection(YastDb.DbRecordsTableName);
 
   int counter = 0;
@@ -194,6 +195,14 @@ Future<Map<String, String>> _getYastObjectsFrom(
     oldMap.remove(obj.id);
   });
   debugPrint(objects.toString());
+
+  // remove old
+  // TODO change to a batch operation
+  oldMap.forEach((mapObj){
+    DocumentReference dr =
+        Firestore.instance.document('$tableName/${mapObj.key}');
+    dr.delete();
+  });
 
   WriteBatch batch = Firestore.instance.batch();
   objects.forEach((obj) async {

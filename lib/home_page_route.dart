@@ -6,15 +6,16 @@ import 'login_page.dart';
 import 'yast_api.dart';
 import 'main.dart';
 import 'display_login_status.dart';
+import 'Model/database_stuff.dart';
 //import 'main.dart:StatusOfApi' as StatusOfApi;
 
 class HomePageRoute extends StatefulWidget {
   static String tag = "home-page-route";
 
-  HomePageRoute({Key key, this.title, this.theSavedState}) : super(key: key);
+  HomePageRoute({Key key, this.title, this.theSavedStatus}) : super(key: key);
 
   final String title;
-  final SavedAppStatus theSavedState;
+  final SavedAppStatus theSavedStatus;
 
   @override
   _MyHomePageState createState() => new _MyHomePageState();
@@ -29,7 +30,7 @@ class _MyHomePageState extends State<HomePageRoute> {
     // Used to retrieve the current value of the TextField
     await _loginToYast();
     // If login successful, then start to retrieve categories now, too
-    if (widget.theSavedState.sttOfApi == StatusOfApi.ApiOk) {
+    if (widget.theSavedStatus.sttOfApi == StatusOfApi.ApiOk) {
       await _retrieveAllProjects().then((_) {
         _retrieveAllFolders().then((_) {
           _retrieveRecords();
@@ -65,11 +66,12 @@ class _MyHomePageState extends State<HomePageRoute> {
     debugPrint('==========_retrieveAllFolders');
 
     YastApi api = YastApi.getApi();
-    widget.theSavedState.counterApiCallsStarted++;
+    widget.theSavedStatus.counterApiCallsStarted++;
 
-    Map<String, String> folderNameMap = await api.yastRetrieveFolders(widget.theSavedState);
-    widget.theSavedState.folderIdToName = folderNameMap;
-    widget.theSavedState.counterApiCallsCompleted++;
+    Map<String, String> folderNameMap =
+        await api.yastRetrieveFolders(widget.theSavedStatus);
+    widget.theSavedStatus.folderIdToName = folderNameMap;
+    widget.theSavedStatus.counterApiCallsCompleted++;
     debugPrint('==========END _retrieveAllFolders');
   }
 
@@ -77,11 +79,11 @@ class _MyHomePageState extends State<HomePageRoute> {
     debugPrint('==========_retrieveAllProjects');
 
     YastApi api = YastApi.getApi();
-    widget.theSavedState.counterApiCallsStarted++;
+    widget.theSavedStatus.counterApiCallsStarted++;
     Map<String, String> projectMap =
-        await api.yastRetrieveProjects(widget.theSavedState);
-    widget.theSavedState.projectIdToName = projectMap;
-    widget.theSavedState.counterApiCallsCompleted++;
+        await api.yastRetrieveProjects(widget.theSavedStatus);
+    widget.theSavedStatus.projectIdToName = projectMap;
+    widget.theSavedStatus.counterApiCallsCompleted++;
   }
 
   /// retrieve Records AND CREATE TIMELINE LIST from the yast API.
@@ -91,17 +93,17 @@ class _MyHomePageState extends State<HomePageRoute> {
     debugPrint('==========_retrieveRecords');
 
     YastApi api = YastApi.getApi();
-    widget.theSavedState.counterApiCallsStarted++;
+    widget.theSavedStatus.counterApiCallsStarted++;
     Map<String, dynamic> recs = await api.yastRetrieveRecords(
-        widget.theSavedState.getUsername(), widget.theSavedState.hashPasswd);
+        widget.theSavedStatus.getUsername(), widget.theSavedStatus.hashPasswd);
     if (recs != null) {
-      widget.theSavedState.records = recs;
+      widget.theSavedStatus.records = recs;
       // List<TimelineModel> timelineList = await changeRecordsIntoTimeline(recs);
       //  widget.theSavedState.timelineModel = timelineList;
     } else {
       // get the records from the dtabaae
     }
-    widget.theSavedState.counterApiCallsCompleted++;
+    widget.theSavedStatus.counterApiCallsCompleted++;
 
     // TODO if the user is now looking at another tab, such as Timeline,
     // how to trigger that to update?
@@ -111,20 +113,20 @@ class _MyHomePageState extends State<HomePageRoute> {
     debugPrint('==========_resetButtonPressed');
 
     setState(() {
-      widget.theSavedState.message = "State just reset";
-      widget.theSavedState.sttOfApi = StatusOfApi.ApiLoginNeeded;
-      widget.theSavedState.hashPasswd = null;
-      widget.theSavedState.showValidationError = false;
+      widget.theSavedStatus.message = "State just reset";
+      widget.theSavedStatus.sttOfApi = StatusOfApi.ApiLoginNeeded;
+      widget.theSavedStatus.hashPasswd = null;
+      widget.theSavedStatus.showValidationError = false;
     });
   }
 
   void _logoutButtonPressed() {
     debugPrint('==========_logoutButtonPressed');
     setState(() {
-      widget.theSavedState.message = "Logged out.";
-      widget.theSavedState.sttOfApi = StatusOfApi.ApiLoginNeeded;
-      widget.theSavedState.hashPasswd = null;
-      widget.theSavedState.showValidationError = false;
+      widget.theSavedStatus.message = "Logged out.";
+      widget.theSavedStatus.sttOfApi = StatusOfApi.ApiLoginNeeded;
+      widget.theSavedStatus.hashPasswd = null;
+      widget.theSavedStatus.showValidationError = false;
     });
   }
 
@@ -133,33 +135,40 @@ class _MyHomePageState extends State<HomePageRoute> {
   Future<void> _loginToYast() async {
     debugPrint('==========_loginToYast');
 
-    widget.theSavedState.counterApiCallsStarted++;
+    widget.theSavedStatus.counterApiCallsStarted++;
 
     var hashPasswd = await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => LoginPage(
-                theSavedState: widget.theSavedState,
+                theSavedState: widget.theSavedStatus,
               ),
         ));
 
-    widget.theSavedState.counterApiCallsCompleted++;
+    widget.theSavedStatus.counterApiCallsCompleted++;
 
     if (hashPasswd != null) {
       setState(() {
-        widget.theSavedState.message = logged_in;
-        widget.theSavedState.sttOfApi = StatusOfApi.ApiOk;
-        widget.theSavedState.showValidationError = false;
-        widget.theSavedState.hashPasswd = hashPasswd;
+        widget.theSavedStatus.message = logged_in;
+        widget.theSavedStatus.sttOfApi = StatusOfApi.ApiOk;
+        widget.theSavedStatus.showValidationError = false;
+        widget.theSavedStatus.hashPasswd = hashPasswd;
       });
     } else {
       setState(() {
-        widget.theSavedState.message = api_login_failure_description;
-        widget.theSavedState.sttOfApi = StatusOfApi.ApiLoginFailure;
-        widget.theSavedState.showValidationError = true;
-        widget.theSavedState.hashPasswd = null;
+        widget.theSavedStatus.message = api_login_failure_description;
+        widget.theSavedStatus.sttOfApi = StatusOfApi.ApiLoginFailure;
+        widget.theSavedStatus.showValidationError = true;
+        widget.theSavedStatus.hashPasswd = null;
       });
       // pass the data up to the top so it can persist
+    }
+  }
+
+  void mapTheProjectIdAndNames() async {
+    if (widget.theSavedStatus.projectIdToName.isEmpty) {
+      // build the projectidmap
+      widget.theSavedStatus.projectIdToName = await getProjectIdMapFromDb();
     }
   }
 
@@ -167,6 +176,7 @@ class _MyHomePageState extends State<HomePageRoute> {
   // This method is rerun every time setState is called.
   @override
   Widget build(BuildContext context) {
+    mapTheProjectIdAndNames();
     var loginButton =
         FlatButton(onPressed: _loginButtonPressed, child: Text("Login"));
     var resetButton =
@@ -215,7 +225,7 @@ class _MyHomePageState extends State<HomePageRoute> {
               softWrap: true,
               text: TextSpan(
                 style: Theme.of(context).textTheme.display1,
-                text: '${widget.theSavedState.counterApiCallsStarted}',
+                text: '${widget.theSavedStatus.counterApiCallsStarted}',
               )),
         ),
         Container(
@@ -226,13 +236,13 @@ class _MyHomePageState extends State<HomePageRoute> {
             softWrap: true,
             text: TextSpan(
               style: Theme.of(context).textTheme.display1,
-              text: '${widget.theSavedState.counterApiCallsCompleted}',
+              text: '${widget.theSavedStatus.counterApiCallsCompleted}',
             ),
           ),
         ),
       ],
     );
-    if (widget.theSavedState.showValidationError == true) {
+    if (widget.theSavedStatus.showValidationError == true) {
       body = Center(
         child: Padding(
           padding: MyApp.padding,
@@ -269,7 +279,7 @@ class _MyHomePageState extends State<HomePageRoute> {
       );
     } else {
       List<Widget> childrenOfColumnView;
-      switch (widget.theSavedState.sttOfApi) {
+      switch (widget.theSavedStatus.sttOfApi) {
         case StatusOfApi.ApiOk:
           childrenOfColumnView = [
 //            buildListView(),
@@ -278,7 +288,7 @@ class _MyHomePageState extends State<HomePageRoute> {
               style: Theme.of(context).textTheme.headline,
             ),
             new Text(
-              '${widget.theSavedState.message}',
+              '${widget.theSavedStatus.message}',
               style: Theme.of(context).textTheme.display1,
             ),
             rowCountersText,
@@ -294,7 +304,7 @@ class _MyHomePageState extends State<HomePageRoute> {
               style: Theme.of(context).textTheme.headline,
             ),
             new Text(
-              '${widget.theSavedState.message}',
+              '${widget.theSavedStatus.message}',
               style: Theme.of(context).textTheme.display1,
             ),
             new Text(
@@ -312,14 +322,14 @@ class _MyHomePageState extends State<HomePageRoute> {
               'Attempts to send HTTP:',
             ),
             new Text(
-              '${widget.theSavedState.counterApiCallsCompleted}',
+              '${widget.theSavedStatus.counterApiCallsCompleted}',
               style: Theme.of(context).textTheme.display1,
             ),
             new Text(
               api_login_failure_description,
             ),
             new Text(
-              '${widget.theSavedState.message}',
+              '${widget.theSavedStatus.message}',
             ),
             rowCountersText,
             rowCounters,
@@ -333,14 +343,14 @@ class _MyHomePageState extends State<HomePageRoute> {
               'Attempts to send HTTP:',
             ),
             new Text(
-              '${widget.theSavedState.counterApiCallsCompleted}',
+              '${widget.theSavedStatus.counterApiCallsCompleted}',
               style: Theme.of(context).textTheme.display1,
             ),
             new Text(
               api_unknown_failure_description,
             ),
             new Text(
-              '${widget.theSavedState.message}',
+              '${widget.theSavedStatus.message}',
             ),
             resetButton,
           ];
@@ -369,7 +379,7 @@ class _MyHomePageState extends State<HomePageRoute> {
       ),
     );
     return displayLoginStatus(
-        savedAppStatus: widget.theSavedState, context: context, child: body);
+        savedAppStatus: widget.theSavedStatus, context: context, child: body);
   }
 
   Container buildListView() {
