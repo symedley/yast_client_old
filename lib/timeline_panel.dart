@@ -26,12 +26,21 @@ class _TimelinePanelState extends State {
 
   final SavedAppStatus theSavedStatus;
 
+  void UpdateProjectIdToName() async {
+    var idToProject = await Firestore.instance
+        .collection(YastDb.DbIdToProjectTableName)
+        .getDocuments();
+    idToProject.documents.forEach((DocumentSnapshot ds) {
+      var id = ds.data.keys.first;
+      var name = ds.data.values.first;
+      theSavedStatus.projectIdToName[id] = name;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    Stream<QuerySnapshot> sqs =
-        Firestore.instance.collection(YastDb.DbRecordsTableName).snapshots();
-    CollectionReference idToProject =
-        Firestore.instance.collection(YastDb.DbIdToProjectTableName);
+    UpdateProjectIdToName();
+
     return displayLoginStatus(
       savedAppStatus: theSavedStatus,
       context: context,
@@ -44,7 +53,7 @@ class _TimelinePanelState extends State {
           resizeToAvoidBottomPadding: true,
           backgroundColor: TimelinePanel.color,
           body: new StreamBuilder(
-              stream: sqs,
+              stream: Firestore.instance.collection('records').snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) return const Text('Loading...');
                 return new ListView.builder(
@@ -53,18 +62,13 @@ class _TimelinePanelState extends State {
                     itemExtent: 25.0,
                     itemBuilder: (context, index) {
                       DocumentSnapshot ds = snapshot.data.documents[index];
-//                      String name =
-//                          theSavedStatus.getProjectNameFromId(ds['project']);
-                      idToProject
-                          .document(ds['project'])
-                          .get()
-                          .then((DocumentSnapshot ds2) {
-                        String nm = ds2.data.values.first;
-                        return new Text(
-                          " $nm ${ds['id']}",
-                          overflow: TextOverflow.ellipsis,
-                        );
-                      });
+                      String name =
+                          theSavedStatus.getProjectNameFromId(ds['project']);
+
+                      return new Text(
+                        " $name ${ds['id']}",
+                        overflow: TextOverflow.ellipsis,
+                      );
                     });
               }),
         ),
