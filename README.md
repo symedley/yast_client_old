@@ -1,6 +1,6 @@
 # yast_client_v2
 
-A new Flutter application.
+This project replacees the old project after upgrades corrupted the old one beyond repair.
 
 ## Getting Started
 
