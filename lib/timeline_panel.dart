@@ -91,7 +91,7 @@ class _TimelinePanelState extends State {
                                   borderRadius: BorderRadius.all(
                                       Radius.circular(Constants.BORDERRADIUS)),
                                   color: hexToColor(theSavedStatus
-                                      .getProjectColorFromId(ds["project"])),
+                                      .getProjectColorStringFromId(ds["project"])),
                                 ),
                               ),
                               Text(

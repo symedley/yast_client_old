@@ -1,5 +1,8 @@
+import 'dart:developer';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'Model/project.dart';
+import 'constants.dart';
 
 enum StatusOfApi {
   ApiOk,
@@ -57,14 +60,24 @@ class SavedAppStatus {
     if (projects == null) {
       projects = {};
     }
+    try {
       return projects[id].name;
+    } catch (e) {
+      debugPrint('$e');
+      return "----";
+    }
   }
 
-  String getProjectColorFromId(String id) {
+  String getProjectColorStringFromId(String id) {
     if (projects == null) {
       projects = {};
     }
+    try {
       return projects[id].primaryColor;
+    } catch (e) {
+      debugPrint('$e');
+      return Constants.COLORSTRING;
+    }
   }
 
   /// Map Folder ID number (as string) to Folder Name.
@@ -74,7 +87,12 @@ class SavedAppStatus {
     if (folderIdToName == null) {
       folderIdToName = {};
     }
+    try {
       return folderIdToName[id];
+    } catch (e) {
+      print(e);
+      return '<folder>';
+    }
   }
 
   void _getSharedPrefs() async {
