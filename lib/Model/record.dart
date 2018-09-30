@@ -59,7 +59,10 @@ class Record extends YastObject {
   //  hourlyIncome
   //  isBillable
 
+  static const million = 1000000;
+  static const dateConversionFactor = million;
   static const String FIELDSMAPID = "id";
+
 //  static const String FIELDSMAPTYPEID = "typeId";
 //  static const String FIELDSMAPTIMECREATED = "timeCreated";
 //  static const String FIELDSMAPTIMEUPDATED = "timeUpdated";
@@ -72,30 +75,36 @@ class Record extends YastObject {
   static const String FIELDSMAPENDTIME = 'endTime';
   static const String FIELDSMAPCOMMENT = 'comment';
   static const String FIELDSMAPISRUNNING = 'isRunning';
+
   // Phone Call Record Type is ignored because we don't care.
 
   static const String __object = "record";
   static const String _variables = "variables";
 
-  String startTime;	// [seconds since 1st of January 1970]
-  String endTime;
+  DateTime startTime; // [seconds since 1st of January 1970]
+  DateTime endTime;
+  String startTimeStr; // [seconds since 1st of January 1970]
+  String endTimeStr;
   String comment;
   String isRunning;
+
 //  String hourlyCost;
 //  String hourlyIncome;
 //  String isBillable;
 
-  Record.fromXml(XmlElement xmlElement) : super(xmlElement, __object)
-  {
-
-    var xmlVariables  = xmlElement.findElements(_variables).toList().first;
-    List<String> variables= new List();
+  Record.fromXml(XmlElement xmlElement) : super(xmlElement, __object) {
+    var xmlVariables = xmlElement.findElements(_variables).toList().first;
+    List<String> variables = new List();
     try {
       xmlVariables.findElements("v").forEach((it) {
-        variables.add( it.text);
+        variables.add(it.text);
       });
-      startTime = variables[0];
-      endTime = variables[1];
+      startTimeStr = variables[0];
+      endTimeStr = variables[1];
+      startTime = DateTime.fromMicrosecondsSinceEpoch(
+          int.parse(startTimeStr) * dateConversionFactor);
+      endTime = DateTime.fromMicrosecondsSinceEpoch(
+          int.parse(endTimeStr) * dateConversionFactor);
       comment = variables[2];
       isRunning = variables[3];
 //       hourlyCost = variables[4];
@@ -108,8 +117,8 @@ class Record extends YastObject {
     // into the fieldmap with the other variables to make it easier to
     // store in the database.
     Map<String, String> forceType = {
-      Record.FIELDSMAPSTARTTIME: this.startTime,
-      Record.FIELDSMAPENDTIME: this.endTime,
+      Record.FIELDSMAPSTARTTIME: this.startTimeStr,
+      Record.FIELDSMAPENDTIME: this.endTimeStr,
       Record.FIELDSMAPCOMMENT: this.comment,
       Record.FIELDSMAPISRUNNING: this.isRunning,
     };

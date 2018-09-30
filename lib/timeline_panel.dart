@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'saved_app_status.dart';
 import 'display_login_status.dart';
 import 'Model/yast_db.dart';
+import 'utilities.dart';
+import 'constants.dart';
 
 class TimelinePanel extends StatefulWidget {
   TimelinePanel({Key key, this.title, this.theSavedStatus}) : super(key: key);
@@ -26,7 +28,7 @@ class _TimelinePanelState extends State {
 
   final SavedAppStatus theSavedStatus;
 
-  void UpdateProjectIdToName() async {
+  void updateProjectIdToName() async {
     var idToProject = await Firestore.instance
         .collection(YastDb.DbIdToProjectTableName)
         .getDocuments();
@@ -39,7 +41,7 @@ class _TimelinePanelState extends State {
 
   @override
   Widget build(BuildContext context) {
-    UpdateProjectIdToName();
+    updateProjectIdToName();
 
     return displayLoginStatus(
       savedAppStatus: theSavedStatus,
@@ -65,10 +67,26 @@ class _TimelinePanelState extends State {
                       String name =
                           theSavedStatus.getProjectNameFromId(ds['project']);
 
-                      return new Text(
-                        " $name ${ds['id']}",
-                        overflow: TextOverflow.ellipsis,
-                      );
+                      return new Row(
+
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: EdgeInsets.all(8.0),
+
+                              width: 200.0,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.all(
+                                    Radius.circular(Constants.BORDERRADIUS)),
+                                color: hexToColor(ds['color']),
+                              ),
+                            ),
+                            Text(
+                              " $name",
+                              overflow: TextOverflow.ellipsis,
+                            )
+                          ]);
                     });
               }),
         ),
