@@ -15,7 +15,7 @@ class TimelinePanel extends StatefulWidget {
   final String title;
 
   static const Color color =
-      const Color(0xFFF9FBE7); // why can't i say Colors.lime[50]?
+  const Color(0xFFF9FBE7); // why can't i say Colors.lime[50]?
 
   @override
   _TimelinePanelState createState() =>
@@ -45,10 +45,7 @@ class _TimelinePanelState extends State {
     });
   }
 
-
-  void _onTap() async {
-
-  }
+  void _onTap() async {}
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +73,7 @@ class _TimelinePanelState extends State {
                     itemBuilder: (context, index) {
                       DocumentSnapshot ds = snapshot.data.documents[index];
                       String name =
-                          theSavedStatus.getProjectNameFromId(ds['project']);
+                      theSavedStatus.getProjectNameFromId(ds['project']);
 
                       return Container(
                         constraints: BoxConstraints.expand(),
@@ -84,36 +81,56 @@ class _TimelinePanelState extends State {
 //                        constraints: BoxConstraints.expand(height:10.0 , width: 10.0 ),
 
                         child: InkWell(
-                          borderRadius: BorderRadius.circular(Constants.BORDERRADIUS),
+                          borderRadius: BorderRadius.circular(
+                              (Constants.BORDERRADIUS) / 4),
+                          // TODO fix these ink splash colors
                           highlightColor: Colors.yellow,
                           splashColor: Colors.white,
                           onTap: _onTap,
-                        child: Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.center,
+                          child:
+                          Row(
                             children: [
                               Container(
-//                              padding: new EdgeInsets.all(20.0),
-                                margin: new EdgeInsets.all(2.0),
-                                constraints: BoxConstraints(minHeight: 20.0),
                                 width: 200.0,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.all(
-                                      Radius.circular(Constants.BORDERRADIUS)),
-                                  color: hexToColor(theSavedStatus
-                                      .getProjectColorStringFromId(ds["project"])),
-                                ),
-                              ),
-                              Text(
-                                " $name",
-                                overflow: TextOverflow.ellipsis,
-                              )
-                            ]),
-                      ),);
-                    });
-              }),
-        ),
-      ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    new Expanded(
+                                      flex: 2,
+                                      child: Container(
+                                        margin: new EdgeInsets.all(2.0),
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.all(
+                                              Radius.circular(
+                                                  Constants.BORDERRADIUS)),
+                                          color: hexToColor(theSavedStatus
+                                              .getProjectColorStringFromId(
+                                              ds["project"])),
+                                        ),
+                                      ),),
+                                    new Expanded(
+                                      flex: 1,
+                                      child: SizedBox(
+                                      ),
+                                    )
+                                  ],
+                                ),),
+                              Text(" $name ",
+                                overflow: TextOverflow.ellipsis,)
+                            ]
+                            ,
+                          )
+                          ,
+                        )
+                        ,
+                      );
+                    }
+                );
+              }
+          ) ,
+        ) ,
+      ) ,
     );
   }
 }

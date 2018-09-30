@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'Model/project.dart';
+import 'Model/record.dart';
 import 'constants.dart';
 
 enum StatusOfApi {
@@ -49,7 +50,14 @@ class SavedAppStatus {
   String hashPasswd;
 
   // records will be a Map of ID string to Record object
-  Map<String, dynamic> records;
+  Map<String, Record> records;
+
+  DateTime getRecordEndTime(String id) {
+    // TODO
+  }
+  DateTime getRecordStartTime(String id) {
+    // TODO
+  }
 
   /// Map Project ID number (as string) to Project Name.
 //  Map<String, String> projectIdToName = {};
