@@ -8,6 +8,7 @@ import 'main.dart';
 import 'display_login_status.dart';
 import 'Model/database_stuff.dart';
 //import 'main.dart:StatusOfApi' as StatusOfApi;
+import 'Model/project.dart';
 
 class HomePageRoute extends StatefulWidget {
   static String tag = "home-page-route";
@@ -80,9 +81,10 @@ class _MyHomePageState extends State<HomePageRoute> {
 
     YastApi api = YastApi.getApi();
     widget.theSavedStatus.counterApiCallsStarted++;
-    Map<String, String> projectMap =
+    Map<String, Project> projectMap =
         await api.yastRetrieveProjects(widget.theSavedStatus);
-    widget.theSavedStatus.projectIdToName = projectMap;
+//    widget.theSavedStatus.projectIdToName = projectMap;
+    widget.theSavedStatus.projects = projectMap;
     widget.theSavedStatus.counterApiCallsCompleted++;
   }
 
@@ -166,9 +168,9 @@ class _MyHomePageState extends State<HomePageRoute> {
   }
 
   void mapTheProjectIdAndNames() async {
-    if (widget.theSavedStatus.projectIdToName.isEmpty) {
+    if (widget.theSavedStatus.projects.isEmpty) {
       // build the projectidmap
-      widget.theSavedStatus.projectIdToName = await getProjectIdMapFromDb();
+      widget.theSavedStatus.projects = await getProjectIdMapFromDb();
     }
   }
 

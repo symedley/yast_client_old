@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+
 import 'saved_app_status.dart';
 import 'display_login_status.dart';
 import 'Model/yast_db.dart';
+import 'Model/project.dart';
 import 'utilities.dart';
 import 'constants.dart';
 
@@ -30,12 +31,17 @@ class _TimelinePanelState extends State {
 
   void updateProjectIdToName() async {
     var idToProject = await Firestore.instance
-        .collection(YastDb.DbIdToProjectTableName)
+//        .collection(YastDb.DbIdToProjectTableName)
+        .collection(YastDb.DbProjectsTableName)
         .getDocuments();
+////////    idToProject.documents.forEach((DocumentSnapshot ds) {
+//////      var id = ds.data.keys.first;
+////      var name = ds.data.values.first;
+//      theSavedStatus.projectIdToName[id] = name;
+//    });
     idToProject.documents.forEach((DocumentSnapshot ds) {
-      var id = ds.data.keys.first;
-      var name = ds.data.values.first;
-      theSavedStatus.projectIdToName[id] = name;
+      var project = Project.fromDocumentSnapshot(ds);
+      theSavedStatus.projects[project.id] = project;
     });
   }
 
@@ -48,7 +54,7 @@ class _TimelinePanelState extends State {
       context: context,
       child: Container(
         color: TimelinePanel.color,
-        constraints: BoxConstraints.loose(Size(200.0, 400.0)),
+//        constraints: BoxConstraints.loose(Size(200.0, 400.0)),
         padding: const EdgeInsets.only(
             left: 8.0, top: 8.0, right: 8.0, bottom: 48.0),
         child: new Scaffold(
@@ -67,26 +73,33 @@ class _TimelinePanelState extends State {
                       String name =
                           theSavedStatus.getProjectNameFromId(ds['project']);
 
-                      return new Row(
+                      return Container(
+                        constraints: BoxConstraints.expand(),
+                        padding: new EdgeInsets.all(2.0),
+//                        constraints: BoxConstraints.expand(height:10.0 , width: 10.0 ),
 
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Container(
-                              padding: EdgeInsets.all(8.0),
-
-                              width: 200.0,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.all(
-                                    Radius.circular(Constants.BORDERRADIUS)),
-                                color: hexToColor(ds['color']),
+                        child: Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Container(
+//                              padding: new EdgeInsets.all(20.0),
+                                margin: new EdgeInsets.all(2.0),
+                                constraints: BoxConstraints(minHeight: 20.0),
+                                width: 200.0,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.all(
+                                      Radius.circular(Constants.BORDERRADIUS)),
+                                  color: hexToColor(theSavedStatus
+                                      .getProjectColorFromId(ds["project"])),
+                                ),
                               ),
-                            ),
-                            Text(
-                              " $name",
-                              overflow: TextOverflow.ellipsis,
-                            )
-                          ]);
+                              Text(
+                                " $name",
+                                overflow: TextOverflow.ellipsis,
+                              )
+                            ]),
+                      );
                     });
               }),
         ),

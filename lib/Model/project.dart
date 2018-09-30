@@ -1,5 +1,6 @@
 import 'package:xml/xml.dart';
 import 'package:xml/xml/nodes/element.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'yast_object.dart';
 
 /// One Project object represents one Project from
@@ -23,4 +24,5 @@ class Project extends YastObject {
   static const String __object = "project";
 
   Project.fromXml(XmlElement xmlElement) : super(xmlElement, __object);
+  Project.fromDocumentSnapshot(DocumentSnapshot docSnap) : super.fromDocSnap(docSnap, __object);
 }

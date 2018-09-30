@@ -6,6 +6,7 @@ import 'yast_response.dart';
 import 'yast_http.dart' as yasthttp;
 import 'constants.dart';
 import 'saved_app_status.dart';
+import 'Model/project.dart';
 
 class YastApi {
   static YastApi theSingleton;
@@ -68,9 +69,9 @@ class YastApi {
   }
 
   /// Outside classes call this to retrieve all the project categories
-  Future<Map<String, String>> yastRetrieveProjects(
+  Future<Map<String, dynamic>> yastRetrieveProjects(
       SavedAppStatus theSavedStatus) async {
-    Map<String, String> mapIdToProjects;
+    Map<String, Project> mapIdToProjects;
     await _yastSendRetrieveRequest(
             theSavedStatus.getUsername(),
             theSavedStatus.hashPasswd,

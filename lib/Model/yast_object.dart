@@ -2,6 +2,7 @@ import 'package:xml/xml/nodes/element.dart';
 import 'package:xml/xml.dart' as xml;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// One Project object represents one Project from
 /// Yast's database.
@@ -48,8 +49,8 @@ abstract class YastObject {
         try {
           if (it.nodeType == xml.XmlNodeType.ELEMENT) {
 //            (it as XmlElement).name;
-            yastObjectFieldsMap.addAll({
-              (it as XmlElement).name.toString(): it.children.first.text});
+            yastObjectFieldsMap.addAll(
+                {(it as XmlElement).name.toString(): it.children.first.text});
           }
         } catch (e) {
           debugPrint(e);
@@ -68,7 +69,32 @@ abstract class YastObject {
         debugPrint(e);
       }
     });
+  }
 
+  YastObject.fromDocSnap(DocumentSnapshot docSnap, String objectType) {
+    try {
+      docSnap.data.forEach((String key, dynamic value) {
+        try {
+          yastObjectFieldsMap[key] = value;
+        } catch (e) {
+          debugPrint(e);
+          throw (e);
+        }
+      });
+      if (docSnap.data.length > 0) {
+        this.id = yastObjectFieldsMap[ID];
+        this.name = yastObjectFieldsMap[NAME];
+        this.description = yastObjectFieldsMap[DESCRIPTION];
+        this.primaryColor = yastObjectFieldsMap[PRIMARYCOLOR];
+        this.parentId = yastObjectFieldsMap[PARENTID];
+        this.privileges = yastObjectFieldsMap[PRIVILEGES];
+        this.timeCreated = yastObjectFieldsMap[TIMECREATED];
+        this.creator = yastObjectFieldsMap[CREATOR];
+      }
+    } catch (e) {
+      debugPrint(e);
+      throw (e);
+    }
   }
 
   String toString() {

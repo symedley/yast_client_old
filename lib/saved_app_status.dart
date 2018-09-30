@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'Model/project.dart';
 
 enum StatusOfApi {
   ApiOk,
@@ -49,13 +50,21 @@ class SavedAppStatus {
   Map<String, dynamic> records;
 
   /// Map Project ID number (as string) to Project Name.
-  Map<String, String> projectIdToName = {};
+//  Map<String, String> projectIdToName = {};
+  Map<String, Project> projects = {};
 
   String getProjectNameFromId(String id) {
-    if (projectIdToName == null) {
-      projectIdToName = {};
+    if (projects == null) {
+      projects = {};
     }
-      return projectIdToName[id];
+      return projects[id].name;
+  }
+
+  String getProjectColorFromId(String id) {
+    if (projects == null) {
+      projects = {};
+    }
+      return projects[id].primaryColor;
   }
 
   /// Map Folder ID number (as string) to Folder Name.

@@ -43,11 +43,11 @@ List<xml.XmlElement> _getXmlObjectsFrom(
   return xmlObjectList;
 }
 
-Future<Map<String, String>> getProjectsFrom(xml.XmlDocument xmlBody) async {
+Future<Map<String, Project>> getProjectsFrom(xml.XmlDocument xmlBody) async {
   List<xml.XmlElement> xmlObjs = _getXmlObjectsFrom(xmlBody, projectStr);
-  Map<String, String> mapProjectIdName = new Map();
+  Map<String, Project> mapProjects = new Map();
   return await _getYastObjectsFrom(
-      mapProjectIdName, TypeXmlObject.Project, xmlObjs);
+      mapProjects, TypeXmlObject.Project, xmlObjs);
 }
 
 ///getRecordsFrom
@@ -166,8 +166,8 @@ Future<void> _deleteAllDocsInCollection(String collectionName) async {
 /// getYastObjectsFrom - most of the logic in getYastProjects and getYastFoldesr
 /// is the same.
 /// returns the Map that was passed in.
-Future<Map<String, String>> _getYastObjectsFrom(
-    Map<String, String> mapIdToYastObjects,
+Future<Map<String, dynamic>> _getYastObjectsFrom(
+    Map<String, dynamic> mapYastOjects,
     TypeXmlObject whichOne,
     //   String tableName,
     List<xml.XmlElement> xmlObjs) async {
@@ -178,9 +178,9 @@ Future<Map<String, String>> _getYastObjectsFrom(
       ? YastDb.DbProjectsTableName
       : YastDb.DbFoldersTableName;
 
-  var oldMap = new List.from(mapIdToYastObjects.keys);
+  var oldMap = new List.from(mapYastOjects.keys);
 
-  List<YastObject> objects = new List<YastObject>();
+//  List<YastObject> objects = new List<YastObject>();
 
   xmlObjs.forEach((it) {
     var obj;
@@ -190,11 +190,11 @@ Future<Map<String, String>> _getYastObjectsFrom(
     } else {
       obj = new Project.fromXml(it);
     }
-    mapIdToYastObjects[obj.id] = obj.name;
-    objects.add(obj);
+//    mapIdToYastObjects[obj.id] = obj.name;
+    mapYastOjects[obj.id] = obj;
     oldMap.remove(obj.id);
   });
-  debugPrint(objects.toString());
+  debugPrint(mapYastOjects.toString());
 
   // remove old
   // TODO change to a batch operation
@@ -205,7 +205,8 @@ Future<Map<String, String>> _getYastObjectsFrom(
   });
 
   WriteBatch batch = Firestore.instance.batch();
-  objects.forEach((obj) async {
+  mapYastOjects.values.forEach((obj) async {
+
     DocumentReference dr = Firestore.instance.document('$tableName/${obj.id}');
     batch.setData(dr, {
       YastObject.ID: obj.id,
@@ -228,5 +229,6 @@ Future<Map<String, String>> _getYastObjectsFrom(
 //    }
   debugPrint("---------END _getYastObjectsFrom");
 
-  return mapIdToYastObjects;
+//  return mapIdToYastObjects;
+  return mapYastOjects;
 } //_getYastObjectsFrom

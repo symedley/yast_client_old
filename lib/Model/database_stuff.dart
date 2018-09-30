@@ -4,18 +4,21 @@ import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'yast_db.dart';
 import '../constants.dart';
+import 'project.dart';
 
-Future<Map<String,String>>getProjectIdMapFromDb() async {
-  Map idToProjectName = new Map<String, String>();
+Future<Map<String,Project>>getProjectIdMapFromDb() async {
+  Map idToProjectName = new Map<String, Project>();
   try {
     WriteBatch batch = Firestore.instance.batch();
     QuerySnapshot qs = await Firestore.instance
         .collection(YastDb.DbProjectsTableName)
         .getDocuments();
 
+    // TODO this will have to be like getYastObjectsFromXml.
     qs.documents.forEach((DocumentSnapshot doc) {
-      idToProjectName
-          .addAll({doc.data['id']: doc.data['name']}.cast<String, String>());
+//      Project obj =
+//      idToProjectName
+//          .addAll({doc.data['id']: doc.data['name']}.cast<String, Project>());
       DocumentReference dr =
           Firestore.instance.document('/${YastDb.DbIdToProjectTableName}/${doc.data["id"]}');
       batch.setData(dr, {doc.data['id']: doc.data['name']});
