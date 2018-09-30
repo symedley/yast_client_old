@@ -45,6 +45,11 @@ class _TimelinePanelState extends State {
     });
   }
 
+
+  void _onTap() async {
+
+  }
+
   @override
   Widget build(BuildContext context) {
     updateProjectIdToName();
@@ -67,7 +72,7 @@ class _TimelinePanelState extends State {
                 return new ListView.builder(
                     itemCount: snapshot.data.documents.length,
                     padding: const EdgeInsets.only(top: 10.0),
-                    itemExtent: 25.0,
+                    itemExtent: 40.0,
                     itemBuilder: (context, index) {
                       DocumentSnapshot ds = snapshot.data.documents[index];
                       String name =
@@ -78,6 +83,11 @@ class _TimelinePanelState extends State {
                         padding: new EdgeInsets.all(2.0),
 //                        constraints: BoxConstraints.expand(height:10.0 , width: 10.0 ),
 
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(Constants.BORDERRADIUS),
+                          highlightColor: Colors.yellow,
+                          splashColor: Colors.white,
+                          onTap: _onTap,
                         child: Row(
                             mainAxisAlignment: MainAxisAlignment.start,
                             crossAxisAlignment: CrossAxisAlignment.center,
@@ -99,7 +109,7 @@ class _TimelinePanelState extends State {
                                 overflow: TextOverflow.ellipsis,
                               )
                             ]),
-                      );
+                      ),);
                     });
               }),
         ),
