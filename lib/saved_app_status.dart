@@ -53,10 +53,22 @@ class SavedAppStatus {
   Map<String, Record> records;
 
   DateTime getRecordEndTime(String id) {
-    // TODO
+    try {
+      return records[id].endTime;
+    } on Null {
+      return null;
+    } on NullThrownError {
+      return null;
+    }
   }
   DateTime getRecordStartTime(String id) {
-    // TODO
+    try {
+      return records[id].startTime;
+    } on Null {
+      return null;
+    } on NullThrownError {
+      return null;
+    }
   }
 
   /// Map Project ID number (as string) to Project Name.

@@ -66,20 +66,16 @@ class _TimelinePanelState extends State {
               stream: Firestore.instance.collection('records').snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) return const Text('Loading...');
-                return new ListView.builder(
+                return new ListView.builder (
                     itemCount: snapshot.data.documents.length,
-                    padding: const EdgeInsets.only(top: 10.0),
-                    itemExtent: 40.0,
+                    padding: const EdgeInsets.only(top: 10.0), itemExtent: 40.0,
                     itemBuilder: (context, index) {
                       DocumentSnapshot ds = snapshot.data.documents[index];
-                      String name =
-                      theSavedStatus.getProjectNameFromId(ds['project']);
-
+                      String name = theSavedStatus.getProjectNameFromId(
+                          ds['project']);
                       return Container(
                         constraints: BoxConstraints.expand(),
                         padding: new EdgeInsets.all(2.0),
-//                        constraints: BoxConstraints.expand(height:10.0 , width: 10.0 ),
-
                         child: InkWell(
                           borderRadius: BorderRadius.circular(
                               (Constants.BORDERRADIUS) / 4),
@@ -98,39 +94,41 @@ class _TimelinePanelState extends State {
                                   children: [
                                     new Expanded(
                                       flex: 2,
+                                      //theSavedStatus.records[ ds["project"] ],
                                       child: Container(
                                         margin: new EdgeInsets.all(2.0),
                                         decoration: BoxDecoration(
                                           borderRadius: BorderRadius.all(
                                               Radius.circular(
                                                   Constants.BORDERRADIUS)),
-                                          color: hexToColor(theSavedStatus
-                                              .getProjectColorStringFromId(
-                                              ds["project"])),
+                                          color: hexToColor(
+                                              theSavedStatus
+                                                  .getProjectColorStringFromId(
+                                                  ds["project"])),
                                         ),
-                                      ),),
-                                    new Expanded(
-                                      flex: 1,
-                                      child: SizedBox(
                                       ),
-                                    )
+                                    ),
+                                    new Expanded (
+                                      flex: 1,
+                                      child: SizedBox(),
+                                    ),
                                   ],
-                                ),),
+                                ),
+                              ),
+
                               Text(" $name ",
-                                overflow: TextOverflow.ellipsis,)
-                            ]
-                            ,
-                          )
-                          ,
-                        )
-                        ,
+                                overflow:
+                                TextOverflow.ellipsis,),
+                            ],
+                          ),
+                        ),
                       );
                     }
                 );
               }
-          ) ,
-        ) ,
-      ) ,
+          ),
+        ),
+      ),
     );
   }
 }
