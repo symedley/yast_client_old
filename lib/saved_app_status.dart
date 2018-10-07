@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:math';
 import 'Model/project.dart';
 import 'Model/record.dart';
 import 'constants.dart';
@@ -50,7 +51,7 @@ class SavedAppStatus {
   String hashPasswd;
 
   // records will be a Map of ID string to Record object
-  Map<String, Record> records;
+  Map<String, Record> records = {};
 
   DateTime getRecordEndTime(String id) {
     try {
@@ -61,6 +62,7 @@ class SavedAppStatus {
       return null;
     }
   }
+
   DateTime getRecordStartTime(String id) {
     try {
       return records[id].startTime;
@@ -69,6 +71,18 @@ class SavedAppStatus {
     } on NullThrownError {
       return null;
     }
+  }
+
+  Duration durationOfRecord(String id) {
+    return this.getRecordEndTime(id).difference(this.getRecordStartTime(id));
+  }
+
+  int howMuchOf24HoursForRecord(String id) {
+    return min(durationOfRecord(id).inHours, 24);
+  }
+
+  int howMuchOf6HoursForRecord(String id) {
+    return min(durationOfRecord(id).inHours, 6);
   }
 
   /// Map Project ID number (as string) to Project Name.

@@ -41,7 +41,9 @@ abstract class YastObject {
 
   Map<String, String> yastObjectFieldsMap = new Map();
 
-  YastObject(XmlElement xmlElement, String objectType) {
+  YastObject();
+
+  YastObject.fromXml(XmlElement xmlElement, String objectType) {
     assert(xmlElement.name.local == objectType);
 
     xmlElement.children.forEach((it) {

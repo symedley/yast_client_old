@@ -22,7 +22,7 @@ class Folder extends YastObject {
   static const String __object = "folder";
 
   Folder.fromXml(xml.XmlElement xmlElement)
-      : super(xmlElement, __object);
+      : super.fromXml(xmlElement, __object);
 
   // this is so i can pass this method as a paramter
   static Folder fromXmlConstructor(xml.XmlElement xmlEl) => new Folder.fromXml(xmlEl);

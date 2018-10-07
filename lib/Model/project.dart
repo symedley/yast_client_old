@@ -23,6 +23,6 @@ class Project extends YastObject {
 
   static const String __object = "project";
 
-  Project.fromXml(XmlElement xmlElement) : super(xmlElement, __object);
+  Project.fromXml(XmlElement xmlElement) : super.fromXml(xmlElement, __object);
   Project.fromDocumentSnapshot(DocumentSnapshot docSnap) : super.fromDocSnap(docSnap, __object);
 }

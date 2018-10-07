@@ -1,5 +1,8 @@
 import 'package:xml/xml/nodes/element.dart';
+import 'package:flutter/foundation.dart';
 import 'yast_object.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 class Record extends YastObject {
   //Yast API for Record:
@@ -92,7 +95,7 @@ class Record extends YastObject {
 //  String hourlyIncome;
 //  String isBillable;
 
-  Record.fromXml(XmlElement xmlElement) : super(xmlElement, __object) {
+  Record.fromXml(XmlElement xmlElement) : super.fromXml(xmlElement, __object) {
     var xmlVariables = xmlElement.findElements(_variables).toList().first;
     List<String> variables = new List();
     try {
@@ -113,6 +116,10 @@ class Record extends YastObject {
     } catch (e) {
       print(e);
     }
+    copyFieldsIntoFieldmap();
+  }
+
+  copyFieldsIntoFieldmap() {
     // Copy the YastObject starttime, endttime, comment and isrunning
     // into the fieldmap with the other variables to make it easier to
     // store in the database.
@@ -123,6 +130,22 @@ class Record extends YastObject {
       Record.FIELDSMAPISRUNNING: this.isRunning,
     };
     this.yastObjectFieldsMap.addAll(forceType);
+  }
+
+  Record.fromDocumentSnapshot(DocumentSnapshot docSnap) : super.fromDocSnap(docSnap, __object) {
+    try {
+        this.startTimeStr = this.yastObjectFieldsMap[Record.FIELDSMAPSTARTTIME];
+        this.endTimeStr = this.yastObjectFieldsMap[Record.FIELDSMAPENDTIME];
+        this.comment = this.yastObjectFieldsMap[Record.FIELDSMAPCOMMENT];
+        this.isRunning = this.yastObjectFieldsMap[Record.FIELDSMAPISRUNNING];
+        startTime = DateTime.fromMicrosecondsSinceEpoch(
+            int.parse(startTimeStr) * dateConversionFactor);
+        endTime = DateTime.fromMicrosecondsSinceEpoch(
+            int.parse(endTimeStr) * dateConversionFactor);
+    } catch (e) {
+      debugPrint(e);
+      throw (e);
+    }
   }
 }
 // For now, depend on the yastObjectFieldsMap in the superclass to get the

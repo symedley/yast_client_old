@@ -6,6 +6,7 @@ import 'saved_app_status.dart';
 import 'display_login_status.dart';
 import 'Model/yast_db.dart';
 import 'Model/project.dart';
+import 'Model/record.dart';
 import 'utilities.dart';
 import 'constants.dart';
 
@@ -71,8 +72,10 @@ class _TimelinePanelState extends State {
                     padding: const EdgeInsets.only(top: 10.0), itemExtent: 40.0,
                     itemBuilder: (context, index) {
                       DocumentSnapshot ds = snapshot.data.documents[index];
-                      String name = theSavedStatus.getProjectNameFromId(
+                      String projectName = theSavedStatus.getProjectNameFromId(
                           ds['project']);
+                      var recordFromDb = Record.fromDocumentSnapshot(ds);
+                      theSavedStatus.records[recordFromDb.id] = recordFromDb;
                       return Container(
                         constraints: BoxConstraints.expand(),
                         padding: new EdgeInsets.all(2.0),
@@ -93,7 +96,7 @@ class _TimelinePanelState extends State {
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     new Expanded(
-                                      flex: 2,
+                                      flex: theSavedStatus.howMuchOf6HoursForRecord(recordFromDb.id),
                                       //theSavedStatus.records[ ds["project"] ],
                                       child: Container(
                                         margin: new EdgeInsets.all(2.0),
@@ -109,14 +112,14 @@ class _TimelinePanelState extends State {
                                       ),
                                     ),
                                     new Expanded (
-                                      flex: 1,
+                                      flex: 6 - theSavedStatus.howMuchOf6HoursForRecord(recordFromDb.id),
                                       child: SizedBox(),
                                     ),
                                   ],
                                 ),
                               ),
 
-                              Text(" $name ",
+                              Text(" $projectName ",
                                 overflow:
                                 TextOverflow.ellipsis,),
                             ],
