@@ -82,48 +82,46 @@ class _TimelinePanelState extends State {
       savedAppStatus: theSavedStatus,
       context: context,
       child: Container(
-        constraints: BoxConstraints.expand(),
-        color: TimelinePanel.color,
+        constraints: BoxConstraints.expand(), color: TimelinePanel.color,
 //        constraints: BoxConstraints.loose(Size(200.0, 400.0)),
-        padding: const EdgeInsets.only(
-            left: 8.0, top: 8.0, right: 8.0, bottom: 8.0),
+        padding:
+            const EdgeInsets.only(left: 8.0, top: 8.0, right: 8.0, bottom: 8.0),
         child: new Scaffold(
-            resizeToAvoidBottomPadding: true,
-            backgroundColor: TimelinePanel.color,
-            body: new StreamBuilder(
-                stream: Firestore.instance.collection('records').snapshots(),
-                builder: (context, snapshot) {
-                  // Loading...
-                  if ((!snapshot.hasData) || (theSavedStatus.projects.isEmpty))
-                    return const Text('Loading...');
+          resizeToAvoidBottomPadding: true,
+          backgroundColor: TimelinePanel.color,
+          body: new StreamBuilder(
+              stream: Firestore.instance.collection('records').snapshots(),
+              builder: (context, snapshot) {
+                // Loading...
+                if ((!snapshot.hasData) || (theSavedStatus.projects.isEmpty))
+                  return const Text('Loading...');
 
-                  // Pie chart
-                  List<CircularSegmentEntry> cse = [];
-                  Set<Project> projects = new Set();
-                  List<DocumentSnapshot> dss = snapshot.data.documents;
-                  dss.forEach((DocumentSnapshot ds) {
-                    var recordFromDb = Record.fromDocumentSnapshot(ds);
-                    theSavedStatus.records[recordFromDb.id] = recordFromDb;
-                    double size = 0.0 +
-                        theSavedStatus
-                            .howMuchOf24HoursForRecord(recordFromDb.id);
-                    cse.add(new CircularSegmentEntry(
-                      size,
-                      hexToColor(theSavedStatus.getProjectColorStringFromId(
-                          recordFromDb.yastObjectFieldsMap["project"])),
-                      rankKey: theSavedStatus.getProjectNameFromId(
-                          recordFromDb.yastObjectFieldsMap['project']),
-                    ));
-                    //TODO creat a getter and handle null
-                    projects.add(theSavedStatus
-                        .projects[recordFromDb.yastObjectFieldsMap["project"]]);
-                  });
-                  List<Project> projectsList = projects.toList();
+                // Pie chart
+                List<CircularSegmentEntry> cse = [];
+                Set<Project> projects = new Set();
+                List<DocumentSnapshot> dss = snapshot.data.documents;
+                dss.forEach((DocumentSnapshot ds) {
+                  var recordFromDb = Record.fromDocumentSnapshot(ds);
+                  theSavedStatus.records[recordFromDb.id] = recordFromDb;
+                  double size = 0.0 +
+                      theSavedStatus.howMuchOf24HoursForRecord(recordFromDb.id);
+                  cse.add(new CircularSegmentEntry(
+                    size,
+                    hexToColor(theSavedStatus.getProjectColorStringFromId(
+                        recordFromDb.yastObjectFieldsMap["project"])),
+                    rankKey: theSavedStatus.getProjectNameFromId(
+                        recordFromDb.yastObjectFieldsMap['project']),
+                  ));
+                  //TODO creat a getter and handle null
+                  projects.add(theSavedStatus
+                      .projects[recordFromDb.yastObjectFieldsMap["project"]]);
+                });
+                List<Project> projectsList = projects.toList();
 
-                  CircularStackEntry entries =
-                      new CircularStackEntry(cse, rankKey: 'name');
-                  data = <CircularStackEntry>[entries];
-                  return Column(
+                CircularStackEntry entries =
+                    new CircularStackEntry(cse, rankKey: 'name');
+                data = <CircularStackEntry>[entries];
+                return Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       Center(
@@ -136,54 +134,53 @@ class _TimelinePanelState extends State {
                       ),
 
                       // Column of project rectangles
-                      new ListView(
-//                        itemCount: projectsList.length,
-                        shrinkWrap: true,
-                        itemExtent: 30.0,
-                        children: projectsList
-                            .map(
-                              (it) =>
-                                  Container(
-                                    constraints: BoxConstraints.expand(
-                                        width: 400.0),
-                                    padding: new EdgeInsets.all(2.0),
-                                    child: InkWell(
-                                      borderRadius: BorderRadius.circular(
-                                          (Constants.BORDERRADIUS) / 4),
-                                      // TODO fix these ink splash colors
-                                      highlightColor: Colors.yellow,
-                                      splashColor: Colors.white,
-                                      onTap: _onTap,
-                                      child: Row(
-                                        children: [
-                                          Container(
-                                            width: 200.0,
-                                            height: 30.0,
-                                            child: Container(
-                                              margin: new EdgeInsets.all(2.0),
-                                              decoration: BoxDecoration(
-                                                borderRadius: BorderRadius.all(
-                                                    Radius.circular(Constants
-                                                        .BORDERRADIUS)),
-                                                color:
-                                                    hexToColor(it.primaryColor),
-                                              ),
-                                            ),
-                                          ),
-                                          Text(
-                                            " ${it.name} ",
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ],
+                      Container(
+                        height: 200.0,
+                        child: new ListView.builder(
+                          itemCount: projectsList.length,
+                          shrinkWrap: true,
+                          itemExtent: 35.0,
+                          itemBuilder: ((context, index) {
+                            return Container(
+                              constraints: BoxConstraints.expand(width: 400.0),
+                              padding: new EdgeInsets.all(2.0),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(
+                                    (Constants.BORDERRADIUS) / 4),
+                                // TODO fix these ink splash colors
+                                highlightColor: Colors.yellow,
+                                splashColor: Colors.white,
+                                onTap: _onTap,
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 200.0,
+//                                      height: 35.0,
+                                      child: Container(
+                                        margin: new EdgeInsets.all(2.0),
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.all(
+                                              Radius.circular(
+                                                  Constants.BORDERRADIUS)),
+                                          color: hexToColor(
+                                              projectsList[index].primaryColor),
+                                        ),
                                       ),
                                     ),
-                                  ),
-                            )
-                            .toList(),
+                                    Text(
+                                      " ${projectsList[index].name}",
+                                      overflow: TextOverflow.ellipsis,
+                                    )
+                                  ],
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
                       ),
-                    ],
-                  );
-                })),
+                    ]);
+              }),
+        ),
       ),
     );
   }
