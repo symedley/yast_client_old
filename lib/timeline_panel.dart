@@ -17,7 +17,7 @@ class TimelinePanel extends StatefulWidget {
   final String title;
 
   static const Color color =
-  const Color(0xFFF9FBE7); // why can't i say Colors.lime[50]?
+      const Color(0xFFF9FBE7); // why can't i say Colors.lime[50]?
 
   @override
   _TimelinePanelState createState() =>
@@ -33,14 +33,8 @@ class _TimelinePanelState extends State {
 
   void updateProjectIdToName() async {
     var idToProject = await Firestore.instance
-//        .collection(YastDb.DbIdToProjectTableName)
         .collection(YastDb.DbProjectsTableName)
         .getDocuments();
-////////    idToProject.documents.forEach((DocumentSnapshot ds) {
-//////      var id = ds.data.keys.first;
-////      var name = ds.data.values.first;
-//      theSavedStatus.projectIdToName[id] = name;
-//    });
     idToProject.documents.forEach((DocumentSnapshot ds) {
       var project = Project.fromDocumentSnapshot(ds);
       theSavedStatus.projects[project.id] = project;
@@ -48,7 +42,7 @@ class _TimelinePanelState extends State {
   }
 
   final GlobalKey<AnimatedCircularChartState> _chartKey =
-  new GlobalKey<AnimatedCircularChartState>();
+      new GlobalKey<AnimatedCircularChartState>();
 
   void _cyclePie() {
     List<CircularStackEntry> nextData = <CircularStackEntry>[
@@ -88,6 +82,7 @@ class _TimelinePanelState extends State {
       savedAppStatus: theSavedStatus,
       context: context,
       child: Container(
+        constraints: BoxConstraints.expand(),
         color: TimelinePanel.color,
 //        constraints: BoxConstraints.loose(Size(200.0, 400.0)),
         padding: const EdgeInsets.only(
@@ -95,107 +90,98 @@ class _TimelinePanelState extends State {
         child: new Scaffold(
           resizeToAvoidBottomPadding: true,
           backgroundColor: TimelinePanel.color,
-          body: Center(
-            child: new StreamBuilder(
-                stream: Firestore.instance.collection('records').snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) return const Text('Loading...');
-                  List<CircularSegmentEntry> cse = [];
-                  List<DocumentSnapshot> dss = snapshot.data.documents;
-                  dss.forEach((DocumentSnapshot ds) {
-                    var recordFromDb = Record.fromDocumentSnapshot(ds);
-                    theSavedStatus.records[recordFromDb.id] = recordFromDb;
-                    double size = 0.0 + theSavedStatus.howMuchOf24HoursForRecord(recordFromDb.id) ;
-                    cse.add(new CircularSegmentEntry(
-                      size,
-                      hexToColor(theSavedStatus.getProjectColorStringFromId(
-                        recordFromDb.yastObjectFieldsMap["project"]) ),
-                      rankKey: recordFromDb.name,
-                    ));
+          body: new StreamBuilder(
+              stream: Firestore.instance.collection('records').snapshots(),
+              builder: (context, snapshot) {
+                // Loading...
+                if ((!snapshot.hasData) || (theSavedStatus.projects.isEmpty))
+                  return const Text('Loading...');
 
-                  });
-                  CircularStackEntry entries = new CircularStackEntry(cse,
-                    rankKey:'name');
-                  data = <CircularStackEntry>[
-                    entries
-                    ];
-//                DocumentSnapshot ds = snapshot.data.documents[index];
-//                String projectName =
-//                theSavedStatus.getProjectNameFromId(ds['project']);
-//                var recordFromDb = Record.fromDocumentSnapshot(ds);
-//                theSavedStatus.records[recordFromDb.id] = recordFromDb;
-                  return new AnimatedCircularChart(
-                    key: _chartKey,
-                      size: const Size(300.0, 300.0),
-                      initialChartData: data,
-                  chartType: CircularChartType.Pie,
-                  );
-                  return new ListView.builder(
-                      itemCount: snapshot.data.documents.length,
-                      padding: const EdgeInsets.only(top: 10.0),
-                      itemExtent: 40.0,
-                      itemBuilder: (context, index) {
-                        DocumentSnapshot ds = snapshot.data.documents[index];
-                        String projectName =
-                        theSavedStatus.getProjectNameFromId(ds['project']);
-                        var recordFromDb = Record.fromDocumentSnapshot(ds);
-                        theSavedStatus.records[recordFromDb.id] = recordFromDb;
-                        return Container(
-                          constraints: BoxConstraints.expand(),
-                          padding: new EdgeInsets.all(2.0),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(
-                                (Constants.BORDERRADIUS) / 4),
-                            // TODO fix these ink splash colors
-                            highlightColor: Colors.yellow,
-                            splashColor: Colors.white,
-                            onTap: _onTap,
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 200.0,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    crossAxisAlignment: CrossAxisAlignment.center,
-                                    children: [
-                                      new Expanded(
-                                        flex: theSavedStatus
-                                            .howMuchOf6HoursForRecord(
-                                            recordFromDb.id),
-                                        //theSavedStatus.records[ ds["project"] ],
-                                        child: Container(
-                                          margin: new EdgeInsets.all(2.0),
-                                          decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.all(
-                                                Radius.circular(
-                                                    Constants.BORDERRADIUS)),
-                                            color: hexToColor(theSavedStatus
-                                                .getProjectColorStringFromId(
-                                                ds["project"])),
-                                          ),
-                                        ),
+                // Pie chart
+                List<CircularSegmentEntry> cse = [];
+                Set<Project> projects = new Set();
+                List<DocumentSnapshot> dss = snapshot.data.documents;
+                dss.forEach((DocumentSnapshot ds) {
+                  var recordFromDb = Record.fromDocumentSnapshot(ds);
+                  theSavedStatus.records[recordFromDb.id] = recordFromDb;
+                  double size = 0.0 +
+                      theSavedStatus.howMuchOf24HoursForRecord(recordFromDb.id);
+                  cse.add(new CircularSegmentEntry(
+                    size,
+                    hexToColor(theSavedStatus.getProjectColorStringFromId(
+                        recordFromDb.yastObjectFieldsMap["project"])),
+                    rankKey: theSavedStatus.getProjectNameFromId(
+                        recordFromDb.yastObjectFieldsMap['project']),
+                  ));
+                  //TODO creat a getter and handle null
+                  projects.add(theSavedStatus
+                      .projects[recordFromDb.yastObjectFieldsMap["project"]]);
+                });
+                List<Project> projectsList = projects.toList();
+
+                CircularStackEntry entries =
+                    new CircularStackEntry(cse, rankKey: 'name');
+                data = <CircularStackEntry>[entries];
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: new AnimatedCircularChart(
+                        key: _chartKey,
+                        size: const Size(300.0, 300.0),
+                        initialChartData: data,
+                        chartType: CircularChartType.Pie,
+                      ),
+                    ),
+
+                    // Column of project rectangles
+                    new ListView.builder(
+                        itemCount: projectsList.length,
+                        shrinkWrap: true,
+//                        itemExtent: 40.0,
+//                        padding: const EdgeInsets.only(top:10.0),
+                        itemBuilder: ((context, index) {
+                          debugPrint("index is $index");
+                          String name = projectsList[index].name;
+                          Container(
+                            constraints: BoxConstraints.expand(
+                                height: 40.0, width: 400.0),
+                            padding: new EdgeInsets.all(2.0),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(
+                                  (Constants.BORDERRADIUS) / 4),
+                              // TODO fix these ink splash colors
+                              highlightColor: Colors.yellow,
+                              splashColor: Colors.white,
+                              onTap: _onTap,
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 200.0,
+                                    height: 30.0,
+                                    child: Container(
+                                      margin: new EdgeInsets.all(2.0),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.all(
+                                            Radius.circular(
+                                                Constants.BORDERRADIUS)),
+                                        color: hexToColor(
+                                            projectsList[index].primaryColor),
                                       ),
-                                      new Expanded(
-                                        flex: 6 -
-                                            theSavedStatus
-                                                .howMuchOf6HoursForRecord(
-                                                recordFromDb.id),
-                                        child: SizedBox(),
-                                      ),
-                                    ],
+                                    ),
                                   ),
-                                ),
-                                Text(
-                                  " $projectName ",
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
+                                  Text(
+                                    " $name ",
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        );
-                      });
-                }),
-          ),
+                          );
+                        }))
+                  ],
+                );
+              }),
         ),
       ),
     );
