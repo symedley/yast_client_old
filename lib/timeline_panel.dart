@@ -108,7 +108,8 @@ class _TimelinePanelState extends State {
                     double size = 0.0 + theSavedStatus.howMuchOf24HoursForRecord(recordFromDb.id) ;
                     cse.add(new CircularSegmentEntry(
                       size,
-                      hexToColor(theSavedStatus.getProjectColorStringFromId(recordFromDb.id)),
+                      hexToColor(theSavedStatus.getProjectColorStringFromId(
+                        recordFromDb.yastObjectFieldsMap["project"]) ),
                       rankKey: recordFromDb.name,
                     ));
 
