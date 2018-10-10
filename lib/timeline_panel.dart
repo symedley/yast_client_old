@@ -29,7 +29,9 @@ class TimelinePanel extends StatefulWidget {
 }
 
 class _TimelinePanelState extends State {
-  _TimelinePanelState(this.theSavedStatus);
+  _TimelinePanelState(this.theSavedStatus) {
+   _fromDate = new DateTime.now();
+  }
 
   final SavedAppStatus theSavedStatus;
 
@@ -143,25 +145,9 @@ class _TimelinePanelState extends State {
                   CircularStackEntry entries =
                       new CircularStackEntry(cse, rankKey: 'name');
                   data = <CircularStackEntry>[entries];
-                  _fromDate = DateTime.now();
                   return Column(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-//                      Flexible(
-//                        child: Center(
-//                          child: Flexible(
-//
-//                            child: DatePicker(
-//                              selectedDate: _fromDate,
-//                              selectDate: (DateTime date) {
-//                                setState(() {
-//                                  _fromDate = date;
-//                                });
-//                              },
-//                            ),
-//                          ),
-//                        ),
-//                      ),
                         Container(
                           padding: EdgeInsets.only(top: 10.0),
                           alignment: Alignment(0.0, -1.0),
