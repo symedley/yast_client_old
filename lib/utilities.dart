@@ -9,4 +9,19 @@ Color hexToColor(String code, {int transparency = 0x880000000}) {
   } catch (e) {
     return Color(0x88ffffffff);
   }
+
+
+}
+
+void showSnackbar(BuildContext scaffoldContext, String theMesg) {
+  final snackBar = SnackBar(
+    content: Text(theMesg),
+    action: SnackBarAction(
+      label: 'OK',
+      onPressed: () {
+        // Some code to undo the change!
+      },
+    ),
+  );
+  Scaffold.of(scaffoldContext).showSnackBar(snackBar);
 }
