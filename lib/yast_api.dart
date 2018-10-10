@@ -7,6 +7,7 @@ import 'yast_http.dart' as yasthttp;
 import 'constants.dart';
 import 'saved_app_status.dart';
 import 'Model/project.dart';
+import 'Model/record.dart';
 
 class YastApi {
   static YastApi theSingleton;
@@ -130,7 +131,7 @@ class YastApi {
 
 
   /// Outside classes call this to retrieve all the project categories
-  Future<Map<String, dynamic>> yastRetrieveRecords(
+  Future<Map<String, Record>> yastRetrieveRecords(
       String username, String hashPwd) async {
     debugPrint('==========yastRetrieveRcords');
 

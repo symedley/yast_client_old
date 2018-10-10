@@ -30,7 +30,7 @@ class TimelinePanel extends StatefulWidget {
 
 class _TimelinePanelState extends State {
   _TimelinePanelState(this.theSavedStatus) {
-   _fromDate = new DateTime.now();
+    _fromDate = new DateTime.now();
   }
 
   final SavedAppStatus theSavedStatus;
@@ -80,7 +80,7 @@ class _TimelinePanelState extends State {
   }
 
   BuildContext _scaffoldContext;
-  DateTime _fromDate ;
+  DateTime _fromDate;
 
   @override
   Widget build(BuildContext context) {
@@ -119,23 +119,35 @@ class _TimelinePanelState extends State {
                   if ((!snapshot.hasData) || (theSavedStatus.projects.isEmpty))
                     return const Text('Loading...');
 
-                  // Pie chart
+                  // Records, Filter records and Pie chart
                   List<CircularSegmentEntry> cse = [];
                   Set<Project> projects = new Set();
                   List<DocumentSnapshot> dss = snapshot.data.documents;
+                  List todaysRecords = new List<Record>();
+                  DateTime tmpFromdate = DateTime.parse(new DateFormat('y-MM-d').format(_fromDate));
+                  DateTime toDate =
+                    tmpFromdate.add(new Duration(hours: 23, minutes: 59));
                   dss.forEach((DocumentSnapshot ds) {
+                    // TODO this really should be someplace else--pulling data from database and
+                    // putting in app's model.
                     var recordFromDb = Record.fromDocumentSnapshot(ds);
                     theSavedStatus.records[recordFromDb.id] = recordFromDb;
-                    double size = 0.0 +
-                        theSavedStatus
-                            .howMuchOf24HoursForRecord(recordFromDb.id);
-                    cse.add(new CircularSegmentEntry(
-                      size,
-                      hexToColor(theSavedStatus.getProjectColorStringFromId(
-                          recordFromDb.yastObjectFieldsMap["project"])),
-                      rankKey: theSavedStatus.getProjectNameFromId(
-                          recordFromDb.yastObjectFieldsMap['project']),
-                    ));
+                    theSavedStatus.startTimeToRecord[recordFromDb.startTime] =
+                        recordFromDb;
+                    if ((tmpFromdate.compareTo(recordFromDb.startTime) < 0) &&
+                        (toDate.compareTo(recordFromDb.endTime) > 0)) {
+                      todaysRecords.add(recordFromDb);
+                      double size = 0.0 +
+                          theSavedStatus
+                              .howMuchOf24HoursForRecord(recordFromDb.id);
+                      cse.add(new CircularSegmentEntry(
+                        size,
+                        hexToColor(theSavedStatus.getProjectColorStringFromId(
+                            recordFromDb.yastObjectFieldsMap["project"])),
+                        rankKey: theSavedStatus.getProjectNameFromId(
+                            recordFromDb.yastObjectFieldsMap['project']),
+                      ));
+                    }
                     //TODO creat a getter and handle null
                     projects.add(theSavedStatus
                         .projects[recordFromDb.yastObjectFieldsMap["project"]]);
