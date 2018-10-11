@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'saved_app_status.dart';
 import 'home_page_route.dart';
-import 'timeline_panel.dart';
+import 'day_summary_panel.dart';
 import 'all_projects_panel.dart';
 import 'all_folders_panel.dart';
 
@@ -99,7 +99,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 title: 'Yast Home Page',
                 theSavedStatus: _currentAppStatus,
               ),
-              TimelinePanel(
+              DaySummaryPanel(
                 // key: key,
                 title: "Timeline",
                 theSavedStatus: _currentAppStatus,

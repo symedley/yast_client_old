@@ -13,8 +13,8 @@ import 'utilities.dart';
 import 'constants.dart';
 import 'date_picker.dart';
 
-class TimelinePanel extends StatefulWidget {
-  TimelinePanel({Key key, this.title, this.theSavedStatus}) : super(key: key);
+class DaySummaryPanel extends StatefulWidget {
+  DaySummaryPanel({Key key, this.title, this.theSavedStatus}) : super(key: key);
 
   final String title;
 
@@ -22,14 +22,14 @@ class TimelinePanel extends StatefulWidget {
       const Color(0xFFF9FBE7); // why can't i say Colors.lime[50]?
 
   @override
-  _TimelinePanelState createState() =>
-      new _TimelinePanelState(this.theSavedStatus);
+  _DaySummaryPanelState createState() =>
+      new _DaySummaryPanelState(this.theSavedStatus);
 
   final SavedAppStatus theSavedStatus;
 }
 
-class _TimelinePanelState extends State {
-  _TimelinePanelState(this.theSavedStatus) {
+class _DaySummaryPanelState extends State {
+  _DaySummaryPanelState(this.theSavedStatus) {
     _fromDate = new DateTime.now();
   }
 
@@ -103,13 +103,13 @@ class _TimelinePanelState extends State {
       context: context,
       child: Container(
         constraints: BoxConstraints.expand(width: 400.00),
-        color: TimelinePanel.color,
+        color: DaySummaryPanel.color,
 //        constraints: BoxConstraints.loose(Size(200.0, 400.0)),
         padding:
             const EdgeInsets.only(left: 8.0, top: 8.0, right: 8.0, bottom: 8.0),
         child: new Scaffold(
           resizeToAvoidBottomPadding: true,
-          backgroundColor: TimelinePanel.color,
+          backgroundColor: DaySummaryPanel.color,
           body: Padding(
             padding: const EdgeInsets.all(8.0),
             child: new StreamBuilder(
