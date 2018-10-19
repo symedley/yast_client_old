@@ -9,6 +9,7 @@ import 'display_login_status.dart';
 import 'Model/database_stuff.dart';
 //import 'main.dart:StatusOfApi' as StatusOfApi;
 import 'Model/project.dart';
+import 'Model/record.dart';
 
 class HomePageRoute extends StatefulWidget {
   static String tag = "home-page-route";
@@ -96,7 +97,7 @@ class _MyHomePageState extends State<HomePageRoute> {
 
     YastApi api = YastApi.getApi();
     widget.theSavedStatus.counterApiCallsStarted++;
-    Map<String, dynamic> recs = await api.yastRetrieveRecords(
+    Map<String, Record> recs = await api.yastRetrieveRecords(
         widget.theSavedStatus.getUsername(), widget.theSavedStatus.hashPasswd);
     if (recs != null) {
       widget.theSavedStatus.records = recs;

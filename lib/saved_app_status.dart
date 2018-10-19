@@ -52,6 +52,7 @@ class SavedAppStatus {
 
   // records will be a Map of ID string to Record object
   Map<String, Record> records = {};
+  Map<DateTime, Record> startTimeToRecord = {};
 
   DateTime getRecordEndTime(String id) {
     try {
