@@ -78,12 +78,12 @@ class SavedAppStatus {
     return this.getRecordEndTime(id).difference(this.getRecordStartTime(id));
   }
 
-  int howMuchOf24HoursForRecord(String id) {
-    return min(durationOfRecord(id).inHours, 24);
+  double howMuchOf24HoursForRecord(String id) {
+    return min((durationOfRecord(id).inMinutes + 0.0) / 60.0, 24.0 );
   }
 
-  int howMuchOf6HoursForRecord(String id) {
-    return min(durationOfRecord(id).inHours, 6);
+  double howMuchOf6HoursForRecord(String id) {
+    return min((durationOfRecord(id).inMinutes + 0.0)/60.0, 6.0 );
   }
 
   /// Map Project ID number (as string) to Project Name.

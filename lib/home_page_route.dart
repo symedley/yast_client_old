@@ -7,6 +7,7 @@ import 'yast_api.dart';
 import 'main.dart';
 import 'display_login_status.dart';
 import 'Model/database_stuff.dart';
+
 //import 'main.dart:StatusOfApi' as StatusOfApi;
 import 'Model/project.dart';
 import 'Model/record.dart';
@@ -98,11 +99,17 @@ class _MyHomePageState extends State<HomePageRoute> {
     YastApi api = YastApi.getApi();
     widget.theSavedStatus.counterApiCallsStarted++;
     Map<String, Record> recs = await api.yastRetrieveRecords(
-        widget.theSavedStatus.getUsername(), widget.theSavedStatus.hashPasswd);
+        widget.theSavedStatus.getUsername(),
+        widget.theSavedStatus.hashPasswd,
+        widget.theSavedStatus);
     if (recs != null) {
       widget.theSavedStatus.records = recs;
-      // List<TimelineModel> timelineList = await changeRecordsIntoTimeline(recs);
-      //  widget.theSavedState.timelineModel = timelineList;
+      // This is for demo purposes only.
+      // create a bunch of fake records going into the future.
+      var newRecords = api.createFutureRecords(widget.theSavedStatus);
+      widget.theSavedStatus.records.addAll(newRecords) ;
+      // This is for demo purposes only.
+      api.yastStoreNewRecords(widget.theSavedStatus, newRecords);
     } else {
       // get the records from the dtabaae
     }

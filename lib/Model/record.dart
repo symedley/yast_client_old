@@ -1,8 +1,10 @@
 import 'package:xml/xml/nodes/element.dart';
 import 'package:flutter/foundation.dart';
+import 'package:xml/xml.dart' as xml;
 import 'yast_object.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import '../utilities.dart' as utils;
+import '../yast_parse.dart' as YastParse;
 
 class Record extends YastObject {
   //Yast API for Record:
@@ -62,14 +64,10 @@ class Record extends YastObject {
   //  hourlyIncome
   //  isBillable
 
-  static const million = 1000000;
-  static const dateConversionFactor = million;
-  static const String FIELDSMAPID = "id";
+//  static const million = 1000000;
+//  static const dateConversionFactor = million;
 
-//  static const String FIELDSMAPTYPEID = "typeId";
-//  static const String FIELDSMAPTIMECREATED = "timeCreated";
-//  static const String FIELDSMAPTIMEUPDATED = "timeUpdated";
-  static const String FIELDSMAPPROJECT = "project";
+  static const String FIELDSMAPPROJECTID = "project";
   static const String FIELDSMAPTIMEFROM = 'timeFrom';
   static const String FIELDSMAPTIMETO = 'timeTo';
   static const String FIELDSMAPUSERID = 'userId';
@@ -84,16 +82,20 @@ class Record extends YastObject {
   static const String __object = "record";
   static const String _variables = "variables";
 
+  //  Record fields. See also those inherited.
   DateTime startTime; // [seconds since 1st of January 1970]
   DateTime endTime;
   String startTimeStr; // [seconds since 1st of January 1970]
   String endTimeStr;
   String comment;
   String isRunning;
+//  String flags;
+  String projectId;
 
-//  String hourlyCost;
-//  String hourlyIncome;
-//  String isBillable;
+  //  Yast gives us these fields, but I don't use them yet.
+  //  String hourlyCost;
+  //  String hourlyIncome;
+  //  String isBillable;
 
   Record.fromXml(XmlElement xmlElement) : super.fromXml(xmlElement, __object) {
     var xmlVariables = xmlElement.findElements(_variables).toList().first;
@@ -105,9 +107,9 @@ class Record extends YastObject {
       startTimeStr = variables[0];
       endTimeStr = variables[1];
       startTime = DateTime.fromMicrosecondsSinceEpoch(
-          int.parse(startTimeStr) * dateConversionFactor);
+          int.parse(startTimeStr) * utils.dateConversionFactor);
       endTime = DateTime.fromMicrosecondsSinceEpoch(
-          int.parse(endTimeStr) * dateConversionFactor);
+          int.parse(endTimeStr) * utils.dateConversionFactor);
       comment = variables[2];
       isRunning = variables[3];
 //       hourlyCost = variables[4];
@@ -116,10 +118,63 @@ class Record extends YastObject {
     } catch (e) {
       print(e);
     }
-    copyFieldsIntoFieldmap();
+    copyVariablesIntoFieldmap();
+    this.projectId = yastObjectFieldsMap[FIELDSMAPPROJECTID];
   }
 
-  copyFieldsIntoFieldmap() {
+  // Xml format of type record.
+  //     <objects>
+  //        <record>
+  //            <typeId>1</typeId>
+  //            <project>101</project>
+  //            <variables>
+  //                <v>1279099500</v>
+  //                <v>1279105802</v>
+  //                <v>Some comment</v>
+  //                <v>0</v>
+  //            </variables>
+  //            <flags>0</flags>
+  //        </record>
+  //    <objects>
+  // TODO shoudl it be XmlDocument or XmlElement?
+  XmlElement toXml() {
+    var builder = new xml.XmlBuilder();
+    builder.processing('xml', 'version="1.0"');
+    builder.element(YastParse.recordStr, nest: () {
+      builder.element('object', nest: () {
+        builder.element('record', nest: () {
+          // ignoring typeId for now
+//          builder.element('typeId', nest: () {
+//            builder.text(this.typeId);
+//          });
+          builder.element('project', nest: () {
+            builder.text(this.projectId);
+          });
+          builder.element('variables', nest: () {
+            builder.element('v', nest: () {
+              builder.text(this.startTimeStr);
+            });
+            builder.element('v', nest: () {
+              builder.text(this.endTimeStr);
+            });
+            builder.element('v', nest: () {
+              builder.text(this.comment);
+            });
+            builder.element('v', nest: () {
+              builder.text(this.isRunning);
+            });
+          });
+          builder.element('flags', nest: () {
+            builder.text(this.flags);
+          });
+        });
+      });
+    });
+//    var retval = super.toXml() ;
+    return builder.build();
+  } // toXml
+
+  copyVariablesIntoFieldmap() {
     // Copy the YastObject starttime, endttime, comment and isrunning
     // into the fieldmap with the other variables to make it easier to
     // store in the database.
@@ -132,21 +187,46 @@ class Record extends YastObject {
     this.yastObjectFieldsMap.addAll(forceType);
   }
 
-  Record.fromDocumentSnapshot(DocumentSnapshot docSnap) : super.fromDocSnap(docSnap, __object) {
+// For now, depend on the yastObjectFieldsMap in the superclass to get the
+// field values that are specific to work records.
+  Record.fromDocumentSnapshot(DocumentSnapshot docSnap)
+      : super.fromDocSnap(docSnap, __object) {
     try {
-        this.startTimeStr = this.yastObjectFieldsMap[Record.FIELDSMAPSTARTTIME];
-        this.endTimeStr = this.yastObjectFieldsMap[Record.FIELDSMAPENDTIME];
-        this.comment = this.yastObjectFieldsMap[Record.FIELDSMAPCOMMENT];
-        this.isRunning = this.yastObjectFieldsMap[Record.FIELDSMAPISRUNNING];
-        startTime = DateTime.fromMicrosecondsSinceEpoch(
-            int.parse(startTimeStr) * dateConversionFactor);
-        endTime = DateTime.fromMicrosecondsSinceEpoch(
-            int.parse(endTimeStr) * dateConversionFactor);
+      this.startTimeStr = this.yastObjectFieldsMap[Record.FIELDSMAPSTARTTIME];
+      this.endTimeStr = this.yastObjectFieldsMap[Record.FIELDSMAPENDTIME];
+      this.comment = this.yastObjectFieldsMap[Record.FIELDSMAPCOMMENT];
+      this.isRunning = this.yastObjectFieldsMap[Record.FIELDSMAPISRUNNING];
+      startTime = DateTime.fromMicrosecondsSinceEpoch(
+          int.parse(startTimeStr) * utils.dateConversionFactor);
+      endTime = DateTime.fromMicrosecondsSinceEpoch(
+          int.parse(endTimeStr) * utils.dateConversionFactor);
+      this.projectId = this.yastObjectFieldsMap[FIELDSMAPPROJECTID];
     } catch (e) {
       debugPrint(e);
       throw (e);
     }
   }
+
+  Record.clone(Record original) : super.clone(original) {
+    try {
+      this.startTimeStr = original.startTimeStr;
+      this.endTimeStr = original.endTimeStr;
+      this.comment = original.comment;
+      this.isRunning = original.isRunning;
+      startTime = original.startTime;
+      endTime = original.endTime;
+      this.projectId = original.yastObjectFieldsMap[FIELDSMAPPROJECTID];
+    } catch (e) {
+      debugPrint(e);
+      throw (e);
+    }
+  }
+
+  Duration duration() {
+    if ((startTime==null) || (endTime==null)) {
+      return null;
+    } else {
+      return endTime.difference(startTime);
+    }
+  }
 }
-// For now, depend on the yastObjectFieldsMap in the superclass to get the
-// field values that are specific to work records.

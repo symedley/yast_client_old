@@ -35,6 +35,14 @@ class _DaySummaryPanelState extends State {
 
   final SavedAppStatus theSavedStatus;
 
+  String rankKeyStr = "pie";
+  String segmentKeyStr = "segment";
+  String entriesKeyStr = "entries";
+  String stackKeyStr = "stack";
+
+  AnimatedCircularChart pieChart;
+
+
   void updateProjectIdToName() async {
     var idToProject = await Firestore.instance
         .collection(YastDb.DbProjectsTableName)
@@ -48,20 +56,9 @@ class _DaySummaryPanelState extends State {
   final GlobalKey<AnimatedCircularChartState> _chartKey =
       new GlobalKey<AnimatedCircularChartState>();
 
-  void _cyclePie() {
-    List<CircularStackEntry> nextData = <CircularStackEntry>[
-      new CircularStackEntry(
-        <CircularSegmentEntry>[
-          new CircularSegmentEntry(500.0, Colors.red[400], rankKey: 'Q1'),
-          new CircularSegmentEntry(1000.0, Colors.green[400], rankKey: 'Q1'),
-          new CircularSegmentEntry(2000.0, Colors.blue[400], rankKey: 'Q1'),
-          new CircularSegmentEntry(1000.0, Colors.yellow[400], rankKey: 'Q1'),
-        ],
-        rankKey: 'Pie Chart',
-      )
-    ];
+  void _cyclePie(List<CircularStackEntry> chartData) {
     setState(() {
-      _chartKey.currentState.updateData(nextData);
+      _chartKey.currentState.updateData(chartData);
     });
   }
 
@@ -89,12 +86,12 @@ class _DaySummaryPanelState extends State {
     List<CircularStackEntry> data = <CircularStackEntry>[
       new CircularStackEntry(
         <CircularSegmentEntry>[
-          new CircularSegmentEntry(500.0, Colors.red[400], rankKey: 'Q1'),
-          new CircularSegmentEntry(1000.0, Colors.green[400], rankKey: 'Q1'),
-          new CircularSegmentEntry(2000.0, Colors.blue[400], rankKey: 'Q1'),
-          new CircularSegmentEntry(1000.0, Colors.yellow[400], rankKey: 'Q1'),
+          new CircularSegmentEntry(500.0, Colors.red[400], rankKey: segmentKeyStr),
+          new CircularSegmentEntry(1000.0, Colors.green[400], rankKey: segmentKeyStr),
+          new CircularSegmentEntry(2000.0, Colors.blue[400], rankKey: segmentKeyStr),
+          new CircularSegmentEntry(1000.0, Colors.yellow[400], rankKey: segmentKeyStr),
         ],
-        rankKey: 'Pie Chart',
+        rankKey: stackKeyStr,
       )
     ];
 
@@ -113,20 +110,27 @@ class _DaySummaryPanelState extends State {
           body: Padding(
             padding: const EdgeInsets.all(8.0),
             child: new StreamBuilder(
-                stream: Firestore.instance.collection('records').snapshots(),
+                stream: Firestore.instance
+                    .collection(YastDb.DbRecordsTableName)
+                    .snapshots(),
                 builder: (context, snapshot) {
                   // Loading...
                   if ((!snapshot.hasData) || (theSavedStatus.projects.isEmpty))
                     return const Text('Loading...');
 
                   // Records, Filter records and Pie chart
-                  List<CircularSegmentEntry> cse = [];
-                  Set<Project> projects = new Set();
+                  List<CircularSegmentEntry> circularSegmentEntries = [];
+                  Set<Project> usedProjectsSet = new Set();
+                  Set<Project> projectsSet = new Set();
+                  List<DurationProject> durationProjects = new List();
                   List<DocumentSnapshot> dss = snapshot.data.documents;
                   List todaysRecords = new List<Record>();
-                  DateTime tmpFromdate = DateTime.parse(new DateFormat('y-MM-d').format(_fromDate));
+                  DateTime tmpFromdate = DateTime.parse(
+                      new DateFormat('y-MM-dd').format(_fromDate));
                   DateTime toDate =
-                    tmpFromdate.add(new Duration(hours: 23, minutes: 59));
+                      tmpFromdate.add(new Duration(hours: 23, minutes: 59));
+                  int i = 0;
+                  double size;
                   dss.forEach((DocumentSnapshot ds) {
                     // TODO this really should be someplace else--pulling data from database and
                     // putting in app's model.
@@ -134,29 +138,84 @@ class _DaySummaryPanelState extends State {
                     theSavedStatus.records[recordFromDb.id] = recordFromDb;
                     theSavedStatus.startTimeToRecord[recordFromDb.startTime] =
                         recordFromDb;
+//                    debugPrint(
+//                        ' --- $i ---> $tmpFromdate , ${recordFromDb.startTime} $toDate');
+                    i++;
+                    size = 0.0;
                     if ((tmpFromdate.compareTo(recordFromDb.startTime) < 0) &&
                         (toDate.compareTo(recordFromDb.endTime) > 0)) {
                       todaysRecords.add(recordFromDb);
-                      double size = 0.0 +
+                      size = 0.0 +
                           theSavedStatus
                               .howMuchOf24HoursForRecord(recordFromDb.id);
-                      cse.add(new CircularSegmentEntry(
+                      // TODO move this into the block of
+                      // for each for the usedProjects.
+                      circularSegmentEntries.add(new CircularSegmentEntry(
                         size,
                         hexToColor(theSavedStatus.getProjectColorStringFromId(
                             recordFromDb.yastObjectFieldsMap["project"])),
                         rankKey: theSavedStatus.getProjectNameFromId(
                             recordFromDb.yastObjectFieldsMap['project']),
                       ));
+                      durationProjects.add(new DurationProject(
+                          recordFromDb.duration(),
+                          theSavedStatus.projects[
+                          recordFromDb.yastObjectFieldsMap["project"]]));
+                      //TODO creat a getter and handle null
+                      usedProjectsSet.add(theSavedStatus
+                          .projects[recordFromDb.yastObjectFieldsMap["project"]]);
+                    } else {
+                      if (theSavedStatus.projects[recordFromDb.projectId] != null) {
+                        projectsSet.add(theSavedStatus
+                            .projects[recordFromDb.projectId]);
+                      }
                     }
-                    //TODO creat a getter and handle null
-                    projects.add(theSavedStatus
-                        .projects[recordFromDb.yastObjectFieldsMap["project"]]);
-                  });
-                  List<Project> projectsList = projects.toList();
 
-                  CircularStackEntry entries =
-                      new CircularStackEntry(cse, rankKey: 'name');
+                  });
+                  // Change the set of projects into a sortable list
+                  // with one instance of each project and the total duration
+                  List<Project> usedProjectsList = usedProjectsSet.toList();
+                  List<DurationProject> orderedProjectsList = new List();
+                  usedProjectsList.forEach((proj) {
+                    orderedProjectsList.add(new DurationProject(
+                        durationProjects.where((durProj) {
+                          return proj.getIdNum() == durProj.project.getIdNum();
+                        }).reduce((dur1, dur2) {
+                          return DurationProject(
+                              dur1.duration + dur2.duration, dur1.project);
+                        }).duration,
+                        proj));
+                  });
+                  projectsSet.removeAll(usedProjectsSet);
+                  projectsSet.forEach((proj) {
+                    orderedProjectsList.add( new DurationProject(
+                        new Duration(days: 0) , proj));
+                  });
+
+                  orderedProjectsList.sort((a,b) => b.duration.compareTo(a.duration));
+
+                  if (circularSegmentEntries.isEmpty) {
+                    circularSegmentEntries.add(new CircularSegmentEntry(
+                      100.0,
+                      Colors.white,
+                      rankKey: segmentKeyStr,
+                    ));
+                  }
+                  CircularStackEntry entries = new CircularStackEntry(
+                      circularSegmentEntries,
+                      rankKey: stackKeyStr);
                   data = <CircularStackEntry>[entries];
+                  if (pieChart == null) {
+                    pieChart = new AnimatedCircularChart(
+                      key: _chartKey,
+                      size: const Size(300.0, 300.0),
+                      initialChartData: data,
+                      chartType: CircularChartType.Pie,
+                    );
+                  }
+                  else {
+                    _cyclePie(data);
+                  }
                   return Column(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
@@ -183,19 +242,14 @@ class _DaySummaryPanelState extends State {
 //                            Text("hello"),
                         ),
                         Center(
-                          child: new AnimatedCircularChart(
-                            key: _chartKey,
-                            size: const Size(300.0, 300.0),
-                            initialChartData: data,
-                            chartType: CircularChartType.Pie,
-                          ),
+                          child: pieChart,
                         ),
 
                         // Column of project rectangles
                         Expanded(
 //                        height: 200.0,
                           child: new ListView.builder(
-                            itemCount: projectsList.length,
+                            itemCount: orderedProjectsList.length,
                             shrinkWrap: true,
                             itemExtent: 35.0,
                             itemBuilder: ((context, index) {
@@ -222,13 +276,13 @@ class _DaySummaryPanelState extends State {
                                                 Radius.circular(
                                                     Constants.BORDERRADIUS)),
                                             color: hexToColor(
-                                                projectsList[index]
+                                                orderedProjectsList[index].project
                                                     .primaryColor),
                                           ),
                                         ),
                                       ),
                                       Text(
-                                        " ${projectsList[index].name}",
+                                        " ${orderedProjectsList[index].project.name}",
                                         overflow: TextOverflow.ellipsis,
                                       )
                                     ],
@@ -245,4 +299,11 @@ class _DaySummaryPanelState extends State {
       ),
     );
   }
+}
+
+class DurationProject {
+  DurationProject(this.duration, this.project);
+
+  Duration duration;
+  Project project;
 }
