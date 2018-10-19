@@ -13,12 +13,25 @@ import 'utilities.dart';
 import 'constants.dart';
 import 'date_picker.dart';
 
+const double barTextEdgeInsets = 12.0;
+const double barEdgeInsets = 2.0;
+const double barWidth = 200.0;
+const double loginStatusWidth = 400.0;
+const double pieChartWidth = 300.0;
+const double barHeight = 30.0;
+const Color dateChooserButtonColor  = Color(0xff9e9e9e); //Colors.grey[300];??
+//const Color dummy  = Colors.grey[400];
+const String rankKeyStr = "pie";
+const String segmentKeyStr = "segment";
+const String entriesKeyStr = "entries";
+const String stackKeyStr = "stack";
+
 class DaySummaryPanel extends StatefulWidget {
   DaySummaryPanel({Key key, this.title, this.theSavedStatus}) : super(key: key);
 
   final String title;
 
-  static const Color color =
+  static const Color backgroundColor =
       const Color(0xFFF9FBE7); // why can't i say Colors.lime[50]?
 
   @override
@@ -35,13 +48,7 @@ class _DaySummaryPanelState extends State {
 
   final SavedAppStatus theSavedStatus;
 
-  String rankKeyStr = "pie";
-  String segmentKeyStr = "segment";
-  String entriesKeyStr = "entries";
-  String stackKeyStr = "stack";
-
   AnimatedCircularChart pieChart;
-
 
   void updateProjectIdToName() async {
     var idToProject = await Firestore.instance
@@ -57,9 +64,7 @@ class _DaySummaryPanelState extends State {
       new GlobalKey<AnimatedCircularChartState>();
 
   void _cyclePie(List<CircularStackEntry> chartData) {
-    setState(() {
-      _chartKey.currentState.updateData(chartData);
-    });
+    _chartKey.currentState.updateData(chartData);
   }
 
   void _onTap() async {}
@@ -72,7 +77,7 @@ class _DaySummaryPanelState extends State {
         firstDate: new DateTime(2018, 1, 1),
         lastDate: new DateTime(2018, 12, 31));
     setState(() {
-      // this is not triggering an update TODO
+//       this is not triggering an update TODO
     });
   }
 
@@ -86,10 +91,6 @@ class _DaySummaryPanelState extends State {
     List<CircularStackEntry> data = <CircularStackEntry>[
       new CircularStackEntry(
         <CircularSegmentEntry>[
-          new CircularSegmentEntry(500.0, Colors.red[400], rankKey: segmentKeyStr),
-          new CircularSegmentEntry(1000.0, Colors.green[400], rankKey: segmentKeyStr),
-          new CircularSegmentEntry(2000.0, Colors.blue[400], rankKey: segmentKeyStr),
-          new CircularSegmentEntry(1000.0, Colors.yellow[400], rankKey: segmentKeyStr),
         ],
         rankKey: stackKeyStr,
       )
@@ -99,14 +100,13 @@ class _DaySummaryPanelState extends State {
       savedAppStatus: theSavedStatus,
       context: context,
       child: Container(
-        constraints: BoxConstraints.expand(width: 400.00),
-        color: DaySummaryPanel.color,
-//        constraints: BoxConstraints.loose(Size(200.0, 400.0)),
+        constraints: BoxConstraints.expand(width: loginStatusWidth),
+        color: DaySummaryPanel.backgroundColor,
         padding:
             const EdgeInsets.only(left: 8.0, top: 8.0, right: 8.0, bottom: 8.0),
         child: new Scaffold(
           resizeToAvoidBottomPadding: true,
-          backgroundColor: DaySummaryPanel.color,
+          backgroundColor: DaySummaryPanel.backgroundColor,
           body: Padding(
             padding: const EdgeInsets.all(8.0),
             child: new StreamBuilder(
@@ -129,8 +129,7 @@ class _DaySummaryPanelState extends State {
                       new DateFormat('y-MM-dd').format(_fromDate));
                   DateTime toDate =
                       tmpFromdate.add(new Duration(hours: 23, minutes: 59));
-                  int i = 0;
-                  double size;
+//                  int i = 0;
                   dss.forEach((DocumentSnapshot ds) {
                     // TODO this really should be someplace else--pulling data from database and
                     // putting in app's model.
@@ -138,39 +137,26 @@ class _DaySummaryPanelState extends State {
                     theSavedStatus.records[recordFromDb.id] = recordFromDb;
                     theSavedStatus.startTimeToRecord[recordFromDb.startTime] =
                         recordFromDb;
-//                    debugPrint(
-//                        ' --- $i ---> $tmpFromdate , ${recordFromDb.startTime} $toDate');
-                    i++;
-                    size = 0.0;
+                    //                    debugPrint(
+                    //                        ' --- $i ---> $tmpFromdate , ${recordFromDb.startTime} $toDate');
+//                    i++;
                     if ((tmpFromdate.compareTo(recordFromDb.startTime) < 0) &&
                         (toDate.compareTo(recordFromDb.endTime) > 0)) {
                       todaysRecords.add(recordFromDb);
-                      size = 0.0 +
-                          theSavedStatus
-                              .howMuchOf24HoursForRecord(recordFromDb.id);
-                      // TODO move this into the block of
-                      // for each for the usedProjects.
-                      circularSegmentEntries.add(new CircularSegmentEntry(
-                        size,
-                        hexToColor(theSavedStatus.getProjectColorStringFromId(
-                            recordFromDb.yastObjectFieldsMap["project"])),
-                        rankKey: theSavedStatus.getProjectNameFromId(
-                            recordFromDb.yastObjectFieldsMap['project']),
-                      ));
                       durationProjects.add(new DurationProject(
                           recordFromDb.duration(),
                           theSavedStatus.projects[
-                          recordFromDb.yastObjectFieldsMap["project"]]));
+                              recordFromDb.yastObjectFieldsMap["project"]]));
                       //TODO creat a getter and handle null
-                      usedProjectsSet.add(theSavedStatus
-                          .projects[recordFromDb.yastObjectFieldsMap["project"]]);
+                      usedProjectsSet
+                          .add(theSavedStatus.projects[recordFromDb.projectId]);
                     } else {
-                      if (theSavedStatus.projects[recordFromDb.projectId] != null) {
-                        projectsSet.add(theSavedStatus
-                            .projects[recordFromDb.projectId]);
+                      if (theSavedStatus.projects[recordFromDb.projectId] !=
+                          null) {
+                        projectsSet.add(
+                            theSavedStatus.projects[recordFromDb.projectId]);
                       }
                     }
-
                   });
                   // Change the set of projects into a sortable list
                   // with one instance of each project and the total duration
@@ -186,112 +172,70 @@ class _DaySummaryPanelState extends State {
                         }).duration,
                         proj));
                   });
+
                   projectsSet.removeAll(usedProjectsSet);
                   projectsSet.forEach((proj) {
-                    orderedProjectsList.add( new DurationProject(
-                        new Duration(days: 0) , proj));
+                    orderedProjectsList
+                        .add(new DurationProject(new Duration(days: 0), proj));
                   });
 
-                  orderedProjectsList.sort((a,b) => b.duration.compareTo(a.duration));
-
-                  if (circularSegmentEntries.isEmpty) {
-                    circularSegmentEntries.add(new CircularSegmentEntry(
-                      100.0,
-                      Colors.white,
-                      rankKey: segmentKeyStr,
-                    ));
-                  }
-                  CircularStackEntry entries = new CircularStackEntry(
-                      circularSegmentEntries,
-                      rankKey: stackKeyStr);
-                  data = <CircularStackEntry>[entries];
+                  orderedProjectsList
+                      .sort((a, b) => b.duration.compareTo(a.duration));
+                  // circularSegmentEnties is passed by reference and set in the createPie method
+                  data = createPie(orderedProjectsList, circularSegmentEntries,
+                      theSavedStatus);
+//                  CircularStackEntry entries = new CircularStackEntry(
+//                      circularSegmentEntries,
+//                      rankKey: stackKeyStr);
                   if (pieChart == null) {
                     pieChart = new AnimatedCircularChart(
                       key: _chartKey,
-                      size: const Size(300.0, 300.0),
+                      size: const Size(pieChartWidth, pieChartWidth),
                       initialChartData: data,
                       chartType: CircularChartType.Pie,
                     );
-                  }
-                  else {
+                  } else {
                     _cyclePie(data);
                   }
                   return Column(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
+                        //
+                        // Date chooser button:
                         Container(
                           padding: EdgeInsets.only(top: 10.0),
                           alignment: Alignment(0.0, -1.0),
-                          width: 300.0,
-                          height: 30.0,
+                          width: pieChartWidth,
+                          height: barHeight,
                           child: FlatButton(
-                              onPressed: _pickDate,
-                              color: Colors.grey[400],
-                              child: Text(
-                                DateFormat.MMMMd().format(_fromDate),
-                                style: TextStyle(color: Colors.black),
-                              )),
-//                          new DatePickerDialog(
-//                            selectedDate: _fromDate,
-//                            selectDate: (DateTime date) {
-//                              setState(() {
-//                                _fromDate = date;
-//                              });
-//                            },
-//                          ),
-//                            Text("hello"),
+                            onPressed: _pickDate,
+                            color: dateChooserButtonColor,
+                            child: Text(
+                              DateFormat.MMMMd().format(_fromDate),
+                              style: TextStyle(color: Colors.black),
+                            ),
+                          ),
                         ),
+                        //
+                        // Pie chart
                         Center(
                           child: pieChart,
                         ),
 
-                        // Column of project rectangles
+                        //
+                        // Column of project rectangle bars
                         Expanded(
-//                        height: 200.0,
                           child: new ListView.builder(
                             itemCount: orderedProjectsList.length,
                             shrinkWrap: true,
                             itemExtent: 35.0,
                             itemBuilder: ((context, index) {
-                              return Container(
-                                constraints:
-                                    BoxConstraints.expand(width: 400.0),
-                                padding: new EdgeInsets.all(2.0),
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(
-                                      (Constants.BORDERRADIUS) / 4),
-                                  // TODO fix these ink splash colors
-                                  highlightColor: Colors.yellow,
-                                  splashColor: Colors.white,
-                                  onTap: _onTap,
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 200.0,
-//                                      height: 35.0,
-                                        child: Container(
-                                          margin: new EdgeInsets.all(2.0),
-                                          decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.all(
-                                                Radius.circular(
-                                                    Constants.BORDERRADIUS)),
-                                            color: hexToColor(
-                                                orderedProjectsList[index].project
-                                                    .primaryColor),
-                                          ),
-                                        ),
-                                      ),
-                                      Text(
-                                        " ${orderedProjectsList[index].project.name}",
-                                        overflow: TextOverflow.ellipsis,
-                                      )
-                                    ],
-                                  ),
-                                ),
-                              );
+                              //
+                              // one Project rectangle bar
+                              return projectBar(orderedProjectsList[index]);
                             }),
                           ),
-                        ),
+                        )
                       ]);
                 }),
           ),
@@ -299,6 +243,83 @@ class _DaySummaryPanelState extends State {
       ),
     );
   }
+
+// only the hours and minutes part
+  String formatDuration(Duration duration) {
+    final formatter = new NumberFormat("##");
+    int hours = duration.inHours % Duration.hoursPerDay;
+    int minutes = duration.inMinutes % Duration.minutesPerHour;
+    return formatter.format(hours) + ":" + formatter.format(minutes);
+  }
+
+  List<CircularStackEntry> createPie(
+      orderedProjectsList, circularSegmentEntries, theSavedStatus) {
+    orderedProjectsList.forEach((dProj) {
+      circularSegmentEntries.add(new CircularSegmentEntry(
+        (dProj.duration.inMinutes + 0.0),
+        hexToColor(
+            theSavedStatus.getProjectColorStringFromId(dProj.project.id)),
+        rankKey: theSavedStatus.getProjectNameFromId(dProj.project.id),
+      ));
+    });
+    if (circularSegmentEntries.isEmpty) {
+      circularSegmentEntries.add(new CircularSegmentEntry(
+        100.0,
+        Colors.white,
+        rankKey: segmentKeyStr,
+      ));
+    }
+    CircularStackEntry entries =
+        new CircularStackEntry(circularSegmentEntries, rankKey: stackKeyStr);
+    return <CircularStackEntry>[entries];
+  }
+
+  Text textForOneProjectColorBar(Duration dura) {
+    return Text(((dura != null) && (dura.inMinutes != 0))
+        ? " ${formatDuration(dura)}"
+        : "");
+  }
+
+  Container projectBar(DurationProject theProjectWithDuration) {
+    return Container(
+      constraints: BoxConstraints.expand(width: loginStatusWidth),
+      padding: new EdgeInsets.all(barEdgeInsets),
+      child: InkWell(
+        borderRadius: BorderRadius.circular((Constants.BORDERRADIUS) / 4),
+        // TODO fix these ink splash colors
+        highlightColor: Colors.yellow,
+        splashColor: Colors.white,
+        onTap: _onTap,
+        child: Row(children: [
+          Container(
+            width: barWidth,
+            child: Container(
+                margin: new EdgeInsets.all(2.0),
+                decoration: BoxDecoration(
+                  borderRadius:
+                      BorderRadius.all(Radius.circular(Constants.BORDERRADIUS)),
+                  color:
+                      hexToColor(theProjectWithDuration.project.primaryColor),
+                ),
+                alignment: Alignment(1.0, 0.0),
+                //
+                // Time text
+                child: Padding(
+                  padding: EdgeInsets.only(
+                      left: barTextEdgeInsets, right: barTextEdgeInsets),
+                  child: textForOneProjectColorBar(
+                      theProjectWithDuration.duration),
+                )),
+          ),
+          Flexible(
+              child: Text(
+            " ${theProjectWithDuration.project.name}",
+            overflow: TextOverflow.ellipsis,
+          ))
+        ]),
+      ),
+    );
+  } // projectBar
 }
 
 class DurationProject {
@@ -307,3 +328,4 @@ class DurationProject {
   Duration duration;
   Project project;
 }
+
