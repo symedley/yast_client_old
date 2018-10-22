@@ -60,10 +60,11 @@ class _AllProjectsPanelState extends State<AllProjectsPanel> {
 //                        initiallyExpanded: false,
 //                        //  onTap: _onProjectTap,
 //                      );
-                      return  ProjectTile(
-                        displayString: " ${ds['name']} ${ds['id']}" ,
-                        backgroundColor: hexToColor(ds['primaryColor']),
-                        onTap: _onProjectTap,
+                      return
+                        ProjectTile(
+                          displayString: " ${ds['name']}" ,
+                          backgroundColor: hexToColor(ds['primaryColor']),
+                          onTap: _onProjectTap,
                       );
                     });
               }),

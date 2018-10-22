@@ -2,7 +2,12 @@
 google-services.json
 GoogleService-Info.plist
 
+Assets.xcassets
+ios/Runner/AppDelegate.m
+ios/Runner/AppDelegate.h
+
 # Miscellaneous
+tmp.txt
 *.class
 *.lock
 *.log

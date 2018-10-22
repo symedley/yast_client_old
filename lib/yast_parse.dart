@@ -12,10 +12,12 @@ import 'constants.dart';
 enum TypeXmlObject {
   Project,
   Folder,
+  Record,
 }
 
 const String projectStr = 'project'; //plural
 const String folderStr = 'folder';
+const String recordStr = 'record';
 
 Future<Map<String, String>> getFoldersFrom(xml.XmlDocument xmlBody) async {
   debugPrint('-------------********** _getFoldersFrom');
@@ -85,11 +87,11 @@ Future<Map<String, dynamic>> getRecordsFrom(xml.XmlDocument xmlBody) async {
   // This could return the recs before putting them in database.
   // I guess that's okay, but what if i needed to wait?
   // It complains if I try to await _putRecordsInDatabase
-  await _putRecordsInDatabase(recs);
+//  await putRecordsInDatabase(recs);
   return recs;
 } //_getRecordsFrom
 
-Future<void> _putRecordsInDatabase(Map<String, dynamic> recs) async {
+Future<void> putRecordsInDatabase(Map<String, dynamic> recs) async {
   // take the things in the variables block
   // that were pulled out in making the Record
   // object and put into the fieldsMap of the
@@ -101,7 +103,7 @@ Future<void> _putRecordsInDatabase(Map<String, dynamic> recs) async {
   debugPrint('==========_putRecordsInDatabase');
 
   // TODO chg this to only delete old keys = orphans
-  await _deleteAllDocsInCollection(YastDb.DbRecordsTableName);
+//  await _deleteAllDocsInCollection(YastDb.DbRecordsTableName);
 
   int counter = 0;
 
@@ -167,7 +169,7 @@ Future<void> _deleteAllDocsInCollection(String collectionName) async {
 /// is the same.
 /// returns the Map that was passed in.
 Future<Map<String, dynamic>> _getYastObjectsFrom(
-    Map<String, dynamic> mapYastOjects,
+    Map<String, dynamic> mapYastObjects,
     TypeXmlObject whichOne,
     //   String tableName,
     List<xml.XmlElement> xmlObjs) async {
@@ -178,7 +180,7 @@ Future<Map<String, dynamic>> _getYastObjectsFrom(
       ? YastDb.DbProjectsTableName
       : YastDb.DbFoldersTableName;
 
-  var oldMap = new List.from(mapYastOjects.keys);
+  var oldMap = new List.from(mapYastObjects.keys);
 
 //  List<YastObject> objects = new List<YastObject>();
 
@@ -191,10 +193,10 @@ Future<Map<String, dynamic>> _getYastObjectsFrom(
       obj = new Project.fromXml(it);
     }
 //    mapIdToYastObjects[obj.id] = obj.name;
-    mapYastOjects[obj.id] = obj;
+    mapYastObjects[obj.id] = obj;
     oldMap.remove(obj.id);
   });
-  debugPrint(mapYastOjects.toString());
+  debugPrint(mapYastObjects.toString());
 
   // remove old
   // TODO change to a batch operation
@@ -205,18 +207,19 @@ Future<Map<String, dynamic>> _getYastObjectsFrom(
   });
 
   WriteBatch batch = Firestore.instance.batch();
-  mapYastOjects.values.forEach((obj) async {
+  mapYastObjects.values.forEach((obj) async {
 
     DocumentReference dr = Firestore.instance.document('$tableName/${obj.id}');
     batch.setData(dr, {
-      YastObject.ID: obj.id,
-      YastObject.NAME: obj.name,
-      YastObject.DESCRIPTION: obj.description,
-      YastObject.PRIMARYCOLOR: obj.primaryColor,
-      YastObject.PARENTID: obj.parentId,
-      YastObject.PRIVILEGES: obj.privileges,
-      YastObject.TIMECREATED: obj.timeCreated,
-      YastObject.CREATOR: obj.creator
+      YastObject.FIELDSMAPID: obj.id,
+      YastObject.FIELDSMAPNAME: obj.name,
+      YastObject.FIELDSMAPDESCRIPTION: obj.description,
+      YastObject.FIELDSMAPPRIMARYCOLOR: obj.primaryColor,
+      YastObject.FIELDSMAPPARENTID: obj.parentId,
+      YastObject.FIELDSMAPPRIVILEGES: obj.privileges,
+      YastObject.FIELDSMAPTIMECREATED: obj.timeCreated,
+      YastObject.FIELDSMAPCREATOR: obj.creator,
+      YastObject.FIELDSMAPFLAGS: obj.flags,
     });
   });
   await batch.commit().timeout(Duration(seconds: 30)).then((it) {
@@ -230,5 +233,5 @@ Future<Map<String, dynamic>> _getYastObjectsFrom(
   debugPrint("---------END _getYastObjectsFrom");
 
 //  return mapIdToYastObjects;
-  return mapYastOjects;
+  return mapYastObjects;
 } //_getYastObjectsFrom
