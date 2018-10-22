@@ -104,12 +104,6 @@ class _MyHomePageState extends State<HomePageRoute> {
         widget.theSavedStatus);
     if (recs != null) {
       widget.theSavedStatus.records = recs;
-      // This is for demo purposes only.
-      // create a bunch of fake records going into the future.
-      var newRecords = api.createFutureRecords(widget.theSavedStatus);
-      widget.theSavedStatus.records.addAll(newRecords) ;
-      // This is for demo purposes only.
-      api.yastStoreNewRecords(widget.theSavedStatus, newRecords);
     } else {
       // get the records from the dtabaae
     }
