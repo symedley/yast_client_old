@@ -11,7 +11,6 @@ import 'Model/project.dart';
 import 'Model/record.dart';
 import 'utilities.dart';
 import 'constants.dart';
-import 'date_picker.dart';
 
 const double barTextEdgeInsets = 12.0;
 const double barEdgeInsets = 2.0;
