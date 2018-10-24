@@ -40,13 +40,17 @@ String dateTimeToYastDate(DateTime inputDate) {
 
 /// Construct a color from a hex code string, of the format #RRGGBB.
 ///  optional transparency, defaults to 0x88000000
-Color hexToColor(String code, {int transparency = 0x880000000}) {
+Color hexToColor(String code, {int transparency = 0xff0000000}) {
+  Color retval;
+  debugPrint("hexToColor: $code transparency: $transparency ............");
   try {
-    return new Color(int.parse(code.substring(1, 7), radix: 16) |
+    retval =  new Color(int.parse(code.substring(1, 7), radix: 16) |
     (transparency));
   } catch (e) {
-    return Color(0x88ffffffff);
+    retval =  Color(0xffffffffff);
   }
+  debugPrint("hexToColor: $retval ............");
+  return retval;
 }
 
 void showSnackbar(BuildContext scaffoldContext, String theMesg) {

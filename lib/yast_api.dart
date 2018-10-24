@@ -140,7 +140,7 @@ class YastApi {
         username, hashPwd, _data_getRecords, optParams)
         .timeout(Duration(seconds: Constants.HTTP_TIMEOUT));
 
-    Map<String, dynamic> retval;
+    Map<String, Record> retval;
     if (yr != null) {
       if (yr.status != YastResponse.yastSuccess) {
         debugPrint("Retrieve records failed");
@@ -172,8 +172,12 @@ class YastApi {
       DateTime start = theSavedAppStatus.getRecordStartTime(key);
       DateTime end = theSavedAppStatus.getRecordEndTime(key);
       Duration delta = targetDay.difference(start) ;
+      delta = delta.abs();
       Record newRec = Record.clone(value);
+      newRec.id = (int.parse(newRec.id)+10000).toString();
       newRec.startTime = newRec.startTime.add(delta);
+      newRec.startTime = newRec.startTime.add(delta);
+      newRec.endTime = newRec.endTime.add(delta);
       newRec.endTime = newRec.endTime.add(delta);
       retval[newRec.id] = newRec;
     });

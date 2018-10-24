@@ -42,7 +42,8 @@ class DaySummaryPanel extends StatefulWidget {
 
 class _DaySummaryPanelState extends State {
   _DaySummaryPanelState(this.theSavedStatus) {
-    _fromDate = new DateTime.now();
+//    _fromDate = new DateTime.now();
+  _fromDate = theSavedStatus.currentDate;
   }
 
   final SavedAppStatus theSavedStatus;
@@ -75,6 +76,7 @@ class _DaySummaryPanelState extends State {
         initialDate: _fromDate,
         firstDate: new DateTime(2018, 1, 1),
         lastDate: new DateTime(2018, 12, 31));
+    theSavedStatus.currentDate = _fromDate;
     setState(() {
 //       this is not triggering an update TODO
     });
@@ -260,6 +262,8 @@ class _DaySummaryPanelState extends State {
             theSavedStatus.getProjectColorStringFromId(dProj.project.id)),
         rankKey: theSavedStatus.getProjectNameFromId(dProj.project.id),
       ));
+      debugPrint(" rankkey:${theSavedStatus.getProjectNameFromId(dProj.project.id)}   color:${hexToColor(
+          theSavedStatus.getProjectColorStringFromId(dProj.project.id))}");
     });
     if (circularSegmentEntries.isEmpty) {
       circularSegmentEntries.add(new CircularSegmentEntry(
@@ -271,7 +275,7 @@ class _DaySummaryPanelState extends State {
     CircularStackEntry entries =
         new CircularStackEntry(circularSegmentEntries, rankKey: stackKeyStr);
     return <CircularStackEntry>[entries];
-  }
+  } //createPie
 
   Text textForOneProjectColorBar(Duration dura) {
     return Text(((dura != null) && (dura.inMinutes != 0))

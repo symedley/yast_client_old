@@ -22,8 +22,10 @@ const String api_unknown_failure_description = "Unknown Failure";
 class SavedAppStatus {
   SavedAppStatus() {
     _getSharedPrefs();
+    currentDate = DateTime.now();
   }
 
+  /// used for the developer tools to render a view without real data
   SavedAppStatus.dummy()  {
     SavedAppStatus retval = new SavedAppStatus();
     retval.sttOfApi = StatusOfApi.ApiOk;
@@ -32,28 +34,34 @@ class SavedAppStatus {
     retval.hashPasswd = 'bogushashpwd';
   }
 
+  /// Stored Username
   String _username = "";
-
   String getUsername() => this._username;
-
   void setUsername(String newUsername) {
     _username = newUsername;
     _savePreferences(newUsername);
   }
 
+  /// Keep track of which day the user is currently looking at
+  DateTime currentDate;
+
+  /// Status (logged in, error, whatever)
+  /// and the message that goes with it.
   StatusOfApi sttOfApi = StatusOfApi.ApiLoginNeeded;
   bool showValidationError = false;
   int counterApiCallsCompleted = 0;
   int counterApiCallsStarted = 0;
-
   String message;
 
+  /// Hashed password, as sent back by the yast API when logging in
   String hashPasswd;
 
-  // records will be a Map of ID string to Record object
+  /// Records = timeline records. Map IdString -> Record object
   Map<String, Record> records = {};
+  /// Records indexed by their start time, so you can retrieve them in order
   Map<DateTime, Record> startTimeToRecord = {};
 
+  /// Record Times: look up starttime and endtime by recordId
   DateTime getRecordEndTime(String id) {
     try {
       return records[id].endTime;
@@ -63,7 +71,6 @@ class SavedAppStatus {
       return null;
     }
   }
-
   DateTime getRecordStartTime(String id) {
     try {
       return records[id].startTime;
@@ -74,22 +81,26 @@ class SavedAppStatus {
     }
   }
 
+  /// Records: find record by id and calculate the duration of that timeline record
   Duration durationOfRecord(String id) {
     return this.getRecordEndTime(id).difference(this.getRecordStartTime(id));
   }
 
+  /// Record: duration in # hours and fraction of hours, looked up by id
+  /// For purposes of displaying in a human friendly way,
   double howMuchOf24HoursForRecord(String id) {
     return min((durationOfRecord(id).inMinutes + 0.0) / 60.0, 24.0 );
   }
 
+  /// Record: duration in # hours and fraction of hours, but cap the max displayed at 6.0
+  /// so it fits in the display as a bar graph. 6 hours or more is just "a long time"
   double howMuchOf6HoursForRecord(String id) {
     return min((durationOfRecord(id).inMinutes + 0.0)/60.0, 6.0 );
   }
 
-  /// Map Project ID number (as string) to Project Name.
-//  Map<String, String> projectIdToName = {};
+  /// Projects : look up by id
+  /// Look up name or color and don't barf if it's not found.
   Map<String, Project> projects = {};
-
   String getProjectNameFromId(String id) {
     if (projects == null) {
       projects = {};
@@ -101,7 +112,6 @@ class SavedAppStatus {
       return "----";
     }
   }
-
   String getProjectColorStringFromId(String id) {
     if (projects == null) {
       projects = {};
@@ -114,9 +124,8 @@ class SavedAppStatus {
     }
   }
 
-  /// Map Folder ID number (as string) to Folder Name.
+  /// Foldernames, by id
   Map<String, String> folderIdToName = {};
-
   String getFolderNameFromId(String id) {
     if (folderIdToName == null) {
       folderIdToName = {};
@@ -129,11 +138,11 @@ class SavedAppStatus {
     }
   }
 
+  /// Shared preferences to store the last used username for the login screen
   void _getSharedPrefs() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     this.setUsername(prefs.getString('username'));
   }
-
   void _savePreferences(String newUsername) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('username', newUsername);

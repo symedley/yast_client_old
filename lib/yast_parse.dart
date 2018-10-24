@@ -72,14 +72,14 @@ Future<Map<String, Project>> getProjectsFrom(xml.XmlDocument xmlBody) async {
 //  isRunning : 1 if the record is running. In that case endTime has not been set yet. Else 0
 ///getRecordsFrom
 ///
-Future<Map<String, dynamic>> getRecordsFrom(xml.XmlDocument xmlBody) async {
+Future<Map<String, Record>> getRecordsFrom(xml.XmlDocument xmlBody) async {
   //return _getXmlObjectsFrom(xmlBody, "record");
   debugPrint('==========_getRecordsFrom');
   List<xml.XmlElement> xmlObjs = _getXmlObjectsFrom(xmlBody, "record");
   if (null != YastDb.LIMITCOUNTOFRECORDS) {
     xmlObjs.length = YastDb.LIMITCOUNTOFRECORDS;
   }
-  Map<String, dynamic> recs = new Map<String, dynamic>();
+  Map<String, Record> recs = new Map<String, Record>();
   xmlObjs.forEach((it) {
     Record aRec = new Record.fromXml(it);
     recs[aRec.id] = aRec;
@@ -102,10 +102,8 @@ Future<void> putRecordsInDatabase(Map<String, dynamic> recs) async {
   // so we won't end up with no records if data connection is lost. (I hope)
   debugPrint('==========_putRecordsInDatabase');
 
-  // TODO chg this to only delete old keys = orphans
-//  await _deleteAllDocsInCollection(YastDb.DbRecordsTableName);
-
   int counter = 0;
+  Set<String> oldKeys= await _getKeysOfCollection(YastDb.DbRecordsTableName);
 
   WriteBatch batch = Firestore.instance.batch();
   recs.values.forEach((rec) async {
@@ -117,10 +115,15 @@ Future<void> putRecordsInDatabase(Map<String, dynamic> recs) async {
     DocumentReference dr =
         Firestore.instance.document('${YastDb.DbRecordsTableName}/${rec.id}');
     batch.setData(dr, rec.yastObjectFieldsMap);
+    oldKeys.remove(rec.id);
 
     counter++;
   });
   debugPrint("============== store records count: $counter");
+  debugPrint("============== list of record keys to delete: $oldKeys");
+
+  // the new list of records just gotten from yast.com
+  await _selectivelyDeleteFromCollection(YastDb.DbRecordsTableName, oldKeys);
 
   await batch
       .commit()
@@ -132,8 +135,52 @@ Future<void> putRecordsInDatabase(Map<String, dynamic> recs) async {
   });
 } // _putRecordsInDatabase
 
+/// a List of the keys of the named collection in Firebase Cloud Firestore
+Future<Set<String>> _getKeysOfCollection(String collectionName) async {
+  debugPrint('-------------**********_getKeysOfCollection');
+  // TODO a try-catch since for most database errors in deleting old
+  // stuff, we want to continue on.
+  Query query = Firestore.instance.collection(collectionName);
+  QuerySnapshot qss = await query.getDocuments();
+  Set<String> retval = new Set();
+  qss.documents.forEach((docSnap) {
+    docSnap.data.keys;
+    int startchar = 1+ docSnap.reference.path.indexOf('/', 0);
+    String id = docSnap.reference.path.substring(startchar,docSnap.reference.path.length);
+    retval.add( id );
+  });
+  return retval;
+} //_getKeysOfACollection
+
+/// Delete only records matching these keys from the named collection
+Future<void> _selectivelyDeleteFromCollection(String collectionName, Set<String> theTargets) async {
+  int counter=0;
+  WriteBatch batch = Firestore.instance.batch();
+  theTargets.forEach((String key) {
+      if ((counter % YastDb.BATCHLIMIT) == 0) {
+        batch.commit();
+        batch = Firestore.instance.batch();
+        debugPrint("====mid way DELETE records count: $counter");
+      }
+      DocumentReference dr =
+      Firestore.instance.document('${YastDb.DbRecordsTableName}/$key');
+      batch.delete(dr);
+
+      counter++;
+    });
+  await batch
+      .commit()
+      .timeout(Duration(seconds: Constants.HTTP_TIMEOUT))
+      .then((it) {
+    debugPrint('records batch result $it');
+  }).whenComplete(() {
+    debugPrint('records batch complete');
+  });
+}
+
 /// Brute force delete all documents in a collection of the given name.
 /// A utility function.
+/// TODO no longer needed?
 Future<void> _deleteAllDocsInCollection(String collectionName) async {
   debugPrint('-------------**********_deleteAllDocsInCollection');
   // TODO a try-catch since for most database errors in deleting old
