@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_circular_chart/flutter_circular_chart.dart';
+import 'package:charts_flutter/flutter.dart' as charts;
+import 'package:charts_common/common.dart' as common;
 import 'package:intl/intl.dart';
 
 import 'saved_app_status.dart';
@@ -11,7 +12,6 @@ import 'Model/project.dart';
 import 'Model/record.dart';
 import 'utilities.dart';
 import 'constants.dart';
-import 'date_picker.dart';
 
 const double barTextEdgeInsets = 12.0;
 const double barEdgeInsets = 2.0;
@@ -19,7 +19,7 @@ const double barWidth = 200.0;
 const double loginStatusWidth = 400.0;
 const double pieChartWidth = 300.0;
 const double barHeight = 30.0;
-const Color dateChooserButtonColor  = Color(0xff9e9e9e); //Colors.grey[300];??
+const Color dateChooserButtonColor = Color(0xff9e9e9e); //Colors.grey[300];??
 //const Color dummy  = Colors.grey[400];
 const String rankKeyStr = "pie";
 const String segmentKeyStr = "segment";
@@ -43,12 +43,16 @@ class DaySummaryPanel extends StatefulWidget {
 
 class _DaySummaryPanelState extends State {
   _DaySummaryPanelState(this.theSavedStatus) {
-    _fromDate = new DateTime.now();
+    _fromDate = theSavedStatus.getPreferredDate();
+    if (_fromDate == null ) {
+      _fromDate = new DateTime.now();
+      theSavedStatus.setPreferredDate(_fromDate);
+    }
   }
 
   final SavedAppStatus theSavedStatus;
 
-  AnimatedCircularChart pieChart;
+  charts.PieChart pieChart;
 
   void updateProjectIdToName() async {
     var idToProject = await Firestore.instance
@@ -60,22 +64,21 @@ class _DaySummaryPanelState extends State {
     });
   }
 
-  final GlobalKey<AnimatedCircularChartState> _chartKey =
-      new GlobalKey<AnimatedCircularChartState>();
-
-  void _cyclePie(List<CircularStackEntry> chartData) {
-    _chartKey.currentState.updateData(chartData);
+  /// update the pie chart with new data. Flutter charts version
+  void _cyclePieFlutterCharts(charts.PieChart pieChart, List<charts.Series> chartData) {
   }
 
   void _onTap() async {}
 
   void _pickDate() async {
     showSnackbar(_scaffoldContext, 'flat button was clicked');
-    _fromDate = await showDatePicker(
+    var tmpDate = await showDatePicker(
         context: _scaffoldContext,
         initialDate: _fromDate,
         firstDate: new DateTime(2018, 1, 1),
         lastDate: new DateTime(2018, 12, 31));
+    _fromDate = (tmpDate==null)?_fromDate:tmpDate;
+    theSavedStatus.setPreferredDate(_fromDate);
     setState(() {
 //       this is not triggering an update TODO
     });
@@ -88,13 +91,14 @@ class _DaySummaryPanelState extends State {
   Widget build(BuildContext context) {
     updateProjectIdToName();
     _scaffoldContext = context;
-    List<CircularStackEntry> data = <CircularStackEntry>[
-      new CircularStackEntry(
-        <CircularSegmentEntry>[
-        ],
-        rankKey: stackKeyStr,
-      )
-    ];
+//    List<CircularStackEntry> data = <CircularStackEntry>[
+//      new CircularStackEntry(
+//        <CircularSegmentEntry>[
+//        ],
+//        rankKey: stackKeyStr,
+//      )
+//    ];
+    List<charts.Series> data;
 
     return displayLoginStatus(
       savedAppStatus: theSavedStatus,
@@ -119,7 +123,6 @@ class _DaySummaryPanelState extends State {
                     return const Text('Loading...');
 
                   // Records, Filter records and Pie chart
-                  List<CircularSegmentEntry> circularSegmentEntries = [];
                   Set<Project> usedProjectsSet = new Set();
                   Set<Project> projectsSet = new Set();
                   List<DurationProject> durationProjects = new List();
@@ -176,27 +179,20 @@ class _DaySummaryPanelState extends State {
                   projectsSet.removeAll(usedProjectsSet);
                   projectsSet.forEach((proj) {
                     orderedProjectsList
-                        .add(new DurationProject(new Duration(days: 0), proj));
+                        .add(new DurationProject(new Duration(hours: 1), proj));
                   });
 
                   orderedProjectsList
                       .sort((a, b) => b.duration.compareTo(a.duration));
-                  // circularSegmentEnties is passed by reference and set in the createPie method
-                  data = createPie(orderedProjectsList, circularSegmentEntries,
+                  // circularSegmentEnties is passed by reference and set in the createPieSegments method
+                  // circularSegmentEnties not used anymore
+                  data = createPieSegmentsChartsFlutter(durationProjects,
                       theSavedStatus);
-//                  CircularStackEntry entries = new CircularStackEntry(
-//                      circularSegmentEntries,
-//                      rankKey: stackKeyStr);
-                  if (pieChart == null) {
-                    pieChart = new AnimatedCircularChart(
-                      key: _chartKey,
-                      size: const Size(pieChartWidth, pieChartWidth),
-                      initialChartData: data,
-                      chartType: CircularChartType.Pie,
-                    );
-                  } else {
-                    _cyclePie(data);
-                  }
+//                  if (pieChart == null) {
+                    pieChart = createPieChartsFlutter(data);
+//                  } else {
+//                    _cyclePieFlutterCharts(pieChart, data);
+//                  }
                   return Column(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
@@ -218,8 +214,12 @@ class _DaySummaryPanelState extends State {
                         ),
                         //
                         // Pie chart
-                        Center(
-                          child: pieChart,
+                        Container(
+                          height: 300.0,
+                          width: 300.0,
+                          child: Center(
+                            child: pieChart,
+                          ),
                         ),
 
                         //
@@ -252,26 +252,59 @@ class _DaySummaryPanelState extends State {
     return formatter.format(hours) + ":" + formatter.format(minutes);
   }
 
-  List<CircularStackEntry> createPie(
-      orderedProjectsList, circularSegmentEntries, theSavedStatus) {
-    orderedProjectsList.forEach((dProj) {
-      circularSegmentEntries.add(new CircularSegmentEntry(
-        (dProj.duration.inMinutes + 0.0),
-        hexToColor(
-            theSavedStatus.getProjectColorStringFromId(dProj.project.id)),
-        rankKey: theSavedStatus.getProjectNameFromId(dProj.project.id),
-      ));
+  /// Create pie using flutter_charts
+
+  charts.PieChart createPieChartsFlutter(List<charts.Series> data) {
+    return new charts.PieChart(data,
+        animate: true,
+        // Add an [ArcLabelDecorator] configured to render labels outside of the
+        // arc with a leader line.
+        //
+        // Text style for inside / outside can be controlled independently by
+        // setting [insideLabelStyleSpec] and [outsideLabelStyleSpec].
+        //
+        // Example configuring different styles for inside/outside:
+        //       new charts.ArcLabelDecorator(
+        //          insideLabelStyleSpec: new charts.TextStyleSpec(...),
+        //          outsideLabelStyleSpec: new charts.TextStyleSpec(...)),
+        defaultRenderer: new charts.ArcRendererConfig(arcRendererDecorators: [
+          new charts.ArcLabelDecorator(
+              labelPosition: charts.ArcLabelPosition.outside)
+        ]));
+  }
+
+  /// Create pie segments from the DurationProject data, which should be sorted
+  /// use flutter_charts
+  List<charts.Series> createPieSegmentsChartsFlutter(
+      durProjectsList, theSavedStatus) {
+    // First, change the usedProjectsList into simpler data
+    List<PieChartData> data = new List();
+    durProjectsList.forEach((dp) {
+      data.add(new PieChartData(dp.duration.inMinutes + 0.0, dp.project.name, dp.project.primaryColor));
     });
-    if (circularSegmentEntries.isEmpty) {
-      circularSegmentEntries.add(new CircularSegmentEntry(
-        100.0,
-        Colors.white,
-        rankKey: segmentKeyStr,
-      ));
+    if (data.isEmpty) {
+      data.add(new PieChartData(100.0, "none", "#225599"));
     }
-    CircularStackEntry entries =
-        new CircularStackEntry(circularSegmentEntries, rankKey: stackKeyStr);
-    return <CircularStackEntry>[entries];
+    var retval = [
+      new charts.Series<PieChartData, int>(
+        id: 'Where time went',
+        domainFn: (PieChartData pcd, _) => (pcd.getDuration().round()),
+        measureFn: (PieChartData pcd, _) => (pcd.getDuration().round()),
+        // dp.getDurationNumber()
+        data: data,
+        // Set a label accessor to control the text of the arc label.
+        labelAccessorFn: (PieChartData row, _) =>
+            '${row.getProjectName()}: ${row.getDuration()}',
+        outsideLabelStyleAccessorFn: _outsideLabelAccessorFn,
+        fillColorFn: (_,__) => common.Color.fromHex(code: '#00FF00'),// common.Color.black ,
+        colorFn: (pieChartData , index) => common.Color.fromHex(code: pieChartData.colorStr),// common.Color.fromHex(code: '#00FF00'),     // ('#00FF00'),
+      )
+    ];
+    return retval;
+  }
+
+  common.TextStyleSpec _outsideLabelAccessorFn(PieChartData pcd, int i) {
+    return common.TextStyleSpec(color: common.Color.black   );
   }
 
   Text textForOneProjectColorBar(Duration dura) {
@@ -329,3 +362,17 @@ class DurationProject {
   Project project;
 }
 
+class PieChartData {
+  PieChartData(this.duration, this.projectName, this.colorStr);
+
+  double duration;
+  double getDuration() {
+    return duration;
+  }
+  String projectName;
+  String getProjectName() {
+    return projectName;
+  }
+  String colorStr;
+  String getColorStr() => colorStr;
+}

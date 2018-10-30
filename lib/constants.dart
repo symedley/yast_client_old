@@ -6,4 +6,5 @@ class Constants {
   static const double EDGEINSETS = 16.0;
   static const Color COLOR = Color(0x88ffffff);
   static const String COLORSTRING = '0x88ffffff';
+  static const String PIECHARTNAME = 'where time went';
 }

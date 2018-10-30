@@ -4,6 +4,7 @@ import 'dart:math';
 import 'Model/project.dart';
 import 'Model/record.dart';
 import 'constants.dart';
+import 'package:intl/intl.dart';
 
 enum StatusOfApi {
   ApiOk,
@@ -24,7 +25,7 @@ class SavedAppStatus {
     _getSharedPrefs();
   }
 
-  SavedAppStatus.dummy()  {
+  SavedAppStatus.dummy() {
     SavedAppStatus retval = new SavedAppStatus();
     retval.sttOfApi = StatusOfApi.ApiOk;
     retval.setUsername('noname');
@@ -79,11 +80,11 @@ class SavedAppStatus {
   }
 
   double howMuchOf24HoursForRecord(String id) {
-    return min((durationOfRecord(id).inMinutes + 0.0) / 60.0, 24.0 );
+    return min((durationOfRecord(id).inMinutes + 0.0) / 60.0, 24.0);
   }
 
   double howMuchOf6HoursForRecord(String id) {
-    return min((durationOfRecord(id).inMinutes + 0.0)/60.0, 6.0 );
+    return min((durationOfRecord(id).inMinutes + 0.0) / 60.0, 6.0);
   }
 
   /// Map Project ID number (as string) to Project Name.
@@ -132,10 +133,26 @@ class SavedAppStatus {
   void _getSharedPrefs() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     this.setUsername(prefs.getString('username'));
+    try {
+          String date = (prefs.getString('preferredDate'));
+          if (date!= null) this.setPreferredDate( DateTime.parse(date));
+    } on FormatException catch (e) {
+      debugPrint(" Failed to get date from shared preferences. $e");
+    }
   }
 
   void _savePreferences(String newUsername) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('username', newUsername);
+    if (this._preferredDate != null) await prefs.setString('preferredDate', this._preferredDate.toString());
+  }
+
+  DateTime _preferredDate;
+
+  DateTime getPreferredDate() => _preferredDate;
+
+  setPreferredDate(DateTime newDate) {
+    _preferredDate = newDate;
+    _savePreferences(this._username);
   }
 }
