@@ -5,6 +5,10 @@ GoogleService-Info.plist
 Assets.xcassets
 ios/Runner/AppDelegate.m
 ios/Runner/AppDelegate.h
+ios/Runner
+ios/Flutter
+ios/Runner.xcodeproj
+ios/Runner.xcworkspace
 
 # Miscellaneous
 tmp.txt
@@ -45,6 +49,9 @@ build/
 **/android/gradlew.bat
 **/android/local.properties
 **/android/**/GeneratedPluginRegistrant.java
+android/app/src/main.java
+android/gradle/wrapper/
+android/app/src/main/java
 
 # iOS/XCode related
 **/ios/**/*.mode1v3
