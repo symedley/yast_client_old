@@ -44,7 +44,7 @@ class DaySummaryPanel extends StatefulWidget {
 class _DaySummaryPanelState extends State {
   _DaySummaryPanelState(this.theSavedStatus) {
     _fromDate = theSavedStatus.getPreferredDate();
-    if (_fromDate == null ) {
+    if (_fromDate == null) {
       _fromDate = new DateTime.now();
       theSavedStatus.setPreferredDate(_fromDate);
     }
@@ -65,8 +65,8 @@ class _DaySummaryPanelState extends State {
   }
 
   /// update the pie chart with new data. Flutter charts version
-  void _cyclePieFlutterCharts(charts.PieChart pieChart, List<charts.Series> chartData) {
-  }
+  void _cyclePieFlutterCharts(
+      charts.PieChart pieChart, List<charts.Series> chartData) {}
 
   void _onTap() async {}
 
@@ -77,7 +77,7 @@ class _DaySummaryPanelState extends State {
         initialDate: _fromDate,
         firstDate: new DateTime(2018, 1, 1),
         lastDate: new DateTime(2018, 12, 31));
-    _fromDate = (tmpDate==null)?_fromDate:tmpDate;
+    _fromDate = (tmpDate == null) ? _fromDate : tmpDate;
     theSavedStatus.setPreferredDate(_fromDate);
     setState(() {
 //       this is not triggering an update TODO
@@ -179,17 +179,17 @@ class _DaySummaryPanelState extends State {
                   projectsSet.removeAll(usedProjectsSet);
                   projectsSet.forEach((proj) {
                     orderedProjectsList
-                        .add(new DurationProject(new Duration(hours: 1), proj));
+                        .add(new DurationProject(new Duration(hours: 0), proj));
                   });
 
                   orderedProjectsList
                       .sort((a, b) => b.duration.compareTo(a.duration));
                   // circularSegmentEnties is passed by reference and set in the createPieSegments method
                   // circularSegmentEnties not used anymore
-                  data = createPieSegmentsChartsFlutter(durationProjects,
-                      theSavedStatus);
+                  data = createPieSegmentsChartsFlutter(
+                      durationProjects, theSavedStatus);
 //                  if (pieChart == null) {
-                    pieChart = createPieChartsFlutter(data);
+                  pieChart = createPieChartsFlutter(data);
 //                  } else {
 //                    _cyclePieFlutterCharts(pieChart, data);
 //                  }
@@ -267,10 +267,22 @@ class _DaySummaryPanelState extends State {
         //       new charts.ArcLabelDecorator(
         //          insideLabelStyleSpec: new charts.TextStyleSpec(...),
         //          outsideLabelStyleSpec: new charts.TextStyleSpec(...)),
-        defaultRenderer: new charts.ArcRendererConfig(arcRendererDecorators: [
-          new charts.ArcLabelDecorator(
-              labelPosition: charts.ArcLabelPosition.outside)
-        ]));
+        defaultRenderer: new charts.ArcRendererConfig(
+            arcWidth: 60,
+            arcRendererDecorators: [new charts.ArcLabelDecorator()]));
+
+//    defaultRenderer: new charts.ArcRendererConfig(arcRendererDecorators: [
+//          new charts.ArcLabelDecorator(
+//              labelPosition: charts.ArcLabelPosition.auto,
+//            insideLabelStyleSpec:
+//            common.TextStyleSpec(
+//                fontFamily: 'Arial'
+//                ,color: common.Color.fromHex(code:  'xff4444ff')),
+//              outsideLabelStyleSpec:
+//                  common.TextStyleSpec(
+//                      fontFamily: 'Arial'
+//                      ,color: common.Color.black))
+//        ]));
   }
 
   /// Create pie segments from the DurationProject data, which should be sorted
@@ -280,7 +292,8 @@ class _DaySummaryPanelState extends State {
     // First, change the usedProjectsList into simpler data
     List<PieChartData> data = new List();
     durProjectsList.forEach((dp) {
-      data.add(new PieChartData(dp.duration.inMinutes + 0.0, dp.project.name, dp.project.primaryColor));
+      data.add(new PieChartData(dp.duration.inMinutes + 0.0, dp.project.name,
+          dp.project.primaryColor));
     });
     if (data.isEmpty) {
       data.add(new PieChartData(100.0, "none", "#225599"));
@@ -294,17 +307,27 @@ class _DaySummaryPanelState extends State {
         data: data,
         // Set a label accessor to control the text of the arc label.
         labelAccessorFn: (PieChartData row, _) =>
-            '${row.getProjectName()}: ${row.getDuration()}',
-        outsideLabelStyleAccessorFn: _outsideLabelAccessorFn,
-        fillColorFn: (_,__) => common.Color.fromHex(code: '#00FF00'),// common.Color.black ,
-        colorFn: (pieChartData , index) => common.Color.fromHex(code: pieChartData.colorStr),// common.Color.fromHex(code: '#00FF00'),     // ('#00FF00'),
+            '${row.getProjectName()}:\n${row.getDuration()}',
+        outsideLabelStyleAccessorFn: _outsideLabelStyleAccessorFn,
+        insideLabelStyleAccessorFn: _insideLabelStyleAccessorFn,
+        fillColorFn: (_, __) => common.Color.fromHex(code: '#00FF00'),
+        // common.Color.black ,
+        colorFn: (pieChartData, index) => common.Color.fromHex(
+            code: pieChartData
+                .colorStr), // common.Color.fromHex(code: '#00FF00'),     // ('#00FF00'),
       )
     ];
     return retval;
   }
 
-  common.TextStyleSpec _outsideLabelAccessorFn(PieChartData pcd, int i) {
-    return common.TextStyleSpec(color: common.Color.black   );
+  common.TextStyleSpec _outsideLabelStyleAccessorFn(PieChartData pcd, int i) {
+    debugPrint('_outsideLabelStyle called');
+    return common.TextStyleSpec(fontFamily: 'Arial', fontSize: 12, color: common.Color.black);
+  }
+
+  common.TextStyleSpec _insideLabelStyleAccessorFn(PieChartData pcd, int i) {
+    debugPrint('_insideLabelStyle called');
+    return common.TextStyleSpec(fontFamily: 'Arial', fontSize: 12, color: common.Color.white);
   }
 
   Text textForOneProjectColorBar(Duration dura) {
@@ -331,8 +354,8 @@ class _DaySummaryPanelState extends State {
                 decoration: BoxDecoration(
                   borderRadius:
                       BorderRadius.all(Radius.circular(Constants.BORDERRADIUS)),
-                  color:
-                      hexToColor(theProjectWithDuration.project.primaryColor),
+                  color: hexToColor(theProjectWithDuration.project.primaryColor,
+                      transparency: 0xff0000000),
                 ),
                 alignment: Alignment(1.0, 0.0),
                 //
@@ -366,13 +389,18 @@ class PieChartData {
   PieChartData(this.duration, this.projectName, this.colorStr);
 
   double duration;
+
   double getDuration() {
     return duration;
   }
+
   String projectName;
+
   String getProjectName() {
     return projectName;
   }
+
   String colorStr;
+
   String getColorStr() => colorStr;
 }

@@ -125,6 +125,8 @@ Future<void> putRecordsInDatabase(Map<String, dynamic> recs) async {
   debugPrint("============== store records count: $counter");
   debugPrint("============== list of record keys to delete: $oldKeys");
 
+  _selectivelyDeleteFromCollection(YastDb.DbRecordsTableName, oldKeys );
+
   await batch
       .commit()
       .timeout(Duration(seconds: Constants.HTTP_TIMEOUT))
