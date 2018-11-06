@@ -91,13 +91,6 @@ class _DaySummaryPanelState extends State {
   Widget build(BuildContext context) {
     updateProjectIdToName();
     _scaffoldContext = context;
-//    List<CircularStackEntry> data = <CircularStackEntry>[
-//      new CircularStackEntry(
-//        <CircularSegmentEntry>[
-//        ],
-//        rankKey: stackKeyStr,
-//      )
-//    ];
     List<charts.Series> data;
 
     return displayLoginStatus(

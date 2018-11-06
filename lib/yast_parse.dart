@@ -123,7 +123,8 @@ Future<void> putRecordsInDatabase(Map<String, dynamic> recs) async {
   debugPrint("============== list of record keys to delete: $oldKeys");
 
   // the new list of records just gotten from yast.com
-  await _selectivelyDeleteFromCollection(YastDb.DbRecordsTableName, oldKeys);
+//  await _selectivelyDeleteFromCollection(YastDb.DbRecordsTableName, oldKeys);
+  // TODO if saving is done in batches, when do i selectivelhy delete?
 
   await batch
       .commit()

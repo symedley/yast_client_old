@@ -151,8 +151,8 @@ class YastApi {
         try {
           retval = await yastParse.getRecordsFrom(yr.body);
           // temporary: create some fake records, duplicating stuff from oct 24.
-          retval.addAll(debug.createFutureRecords(retval));
           await yastParse.putRecordsInDatabase(retval);
+          await (debug.createFutureRecords(retval));
         } catch (e) {
           debugPrint("exception retrieving records");
           throw (e);
