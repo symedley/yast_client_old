@@ -23,6 +23,15 @@ const String api_unknown_failure_description = "Unknown Failure";
 class SavedAppStatus {
   SavedAppStatus() {
     _getSharedPrefs();
+    projects = {};
+    _username = "";
+    sttOfApi = StatusOfApi.ApiLoginNeeded;
+    showValidationError = false;
+    counterApiCallsCompleted = 0;
+    counterApiCallsStarted = 0;
+    records = {};
+    startTimeToRecord = {};
+    folderIdToName = {};
   }
 
   SavedAppStatus.dummy() {
@@ -134,8 +143,8 @@ class SavedAppStatus {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     this.setUsername(prefs.getString('username'));
     try {
-          String date = (prefs.getString('preferredDate'));
-          if (date!= null) this.setPreferredDate( DateTime.parse(date));
+      String date = (prefs.getString('preferredDate'));
+      if (date != null) this.setPreferredDate(DateTime.parse(date));
     } on FormatException catch (e) {
       debugPrint(" Failed to get date from shared preferences. $e");
     }
@@ -144,7 +153,8 @@ class SavedAppStatus {
   void _savePreferences(String newUsername) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('username', newUsername);
-    if (this._preferredDate != null) await prefs.setString('preferredDate', this._preferredDate.toString());
+    if (this._preferredDate != null)
+      await prefs.setString('preferredDate', this._preferredDate.toString());
   }
 
   DateTime _preferredDate;

@@ -215,6 +215,7 @@ class Record extends YastObject {
       this.isRunning = original.isRunning;
       startTime = original.startTime;
       endTime = original.endTime;
+      yastObjectFieldsMap = new Map.from(original.yastObjectFieldsMap);
       this.projectId = original.yastObjectFieldsMap[FIELDSMAPPROJECTID];
     } catch (e) {
       debugPrint(e);

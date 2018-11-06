@@ -4,8 +4,11 @@ import 'package:flutter/material.dart';
 // Constants
 //
 // for DateTime conversion, since yast uses seconds from epoch
-const million = 1000000;
-const dateConversionFactor = million;
+// but Dart DateTime uses millisecondsSinceEpoch and microsecondsSinceEpoch
+//
+const int million = 1000000;
+const int thousand = 1000;
+const int dateConversionFactor = million;
 
 
 // convert yast date string to a DateTime
@@ -27,8 +30,9 @@ DateTime yastTimetoDateTime(String dateTimeString) {
 String dateTimeToYastDate(DateTime inputDate) {
   String retval;
   try{
-    double tmp = inputDate.millisecondsSinceEpoch / dateConversionFactor;
-    retval = tmp.toString();
+    int tmp = (inputDate.millisecondsSinceEpoch  / thousand).round();;
+    int it = tmp as int;
+    retval = it.toString();
   }
   catch(e) {
     debugPrint(e);

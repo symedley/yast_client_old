@@ -48,11 +48,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
   static String tag = "my-app";
 
-  SavedAppStatus _currentAppStatus;
+  static SavedAppStatus _currentAppStatus;
 
   final routes = <String, WidgetBuilder>{
 //    LoginPage.tag: (context) => LoginPage(),
-    HomePageRoute.tag: (context) => HomePageRoute(),
+    HomePageRoute.tag: (context) => HomePageRoute(theSavedStatus: _currentAppStatus,),
   };
 
   @override

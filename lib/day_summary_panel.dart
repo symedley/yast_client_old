@@ -128,10 +128,10 @@ class _DaySummaryPanelState extends State {
                   List<DurationProject> durationProjects = new List();
                   List<DocumentSnapshot> dss = snapshot.data.documents;
                   List todaysRecords = new List<Record>();
-                  DateTime tmpFromdate = DateTime.parse(
+                  DateTime beginTimeSegment = DateTime.parse(
                       new DateFormat('y-MM-dd').format(_fromDate));
-                  DateTime toDate =
-                      tmpFromdate.add(new Duration(hours: 23, minutes: 59));
+                  DateTime endTimeSegment =
+                      beginTimeSegment.add(new Duration(hours: 23, minutes: 59));
 //                  int i = 0;
                   dss.forEach((DocumentSnapshot ds) {
                     // TODO this really should be someplace else--pulling data from database and
@@ -143,8 +143,8 @@ class _DaySummaryPanelState extends State {
                     //                    debugPrint(
                     //                        ' --- $i ---> $tmpFromdate , ${recordFromDb.startTime} $toDate');
 //                    i++;
-                    if ((tmpFromdate.compareTo(recordFromDb.startTime) < 0) &&
-                        (toDate.compareTo(recordFromDb.endTime) > 0)) {
+                    if ((beginTimeSegment.compareTo(recordFromDb.startTime) < 0) &&
+                        (endTimeSegment.compareTo(recordFromDb.endTime) > 0)) {
                       todaysRecords.add(recordFromDb);
                       durationProjects.add(new DurationProject(
                           recordFromDb.duration(),
@@ -307,7 +307,7 @@ class _DaySummaryPanelState extends State {
         data: data,
         // Set a label accessor to control the text of the arc label.
         labelAccessorFn: (PieChartData row, _) =>
-            '${row.getProjectName()}:\n${row.getDuration()}',
+            '${row.getProjectName()}:\n${row.getDuration().ceil()} min' ,
         outsideLabelStyleAccessorFn: _outsideLabelStyleAccessorFn,
         insideLabelStyleAccessorFn: _insideLabelStyleAccessorFn,
         fillColorFn: (_, __) => common.Color.fromHex(code: '#00FF00'),

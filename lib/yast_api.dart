@@ -8,6 +8,7 @@ import 'constants.dart';
 import 'saved_app_status.dart';
 import 'Model/project.dart';
 import 'Model/record.dart';
+import 'debug_create_future_records.dart' as debug;
 
 class YastApi {
   static YastApi theSingleton;
@@ -149,6 +150,8 @@ class YastApi {
       } else {
         try {
           retval = await yastParse.getRecordsFrom(yr.body);
+          // temporary: create some fake records, duplicating stuff from oct 24.
+          retval.addAll(debug.createFutureRecords(retval));
           await yastParse.putRecordsInDatabase(retval);
         } catch (e) {
           debugPrint("exception retrieving records");
@@ -161,24 +164,6 @@ class YastApi {
       return null;
     }
   } // yastRetrieveRecords
-
-  // create copies of records going out into the future.
-  // plausible fakes.
-  // These must go into the database and be entered using the yast api
-  Map<String, Record> createFutureRecords(SavedAppStatus theSavedAppStatus) {
-    DateTime targetDay = DateTime.now();
-    Map<String, Record> retval = new Map<String, Record>();
-    theSavedAppStatus.records.forEach((String key, Record value) {
-      DateTime start = theSavedAppStatus.getRecordStartTime(key);
-      DateTime end = theSavedAppStatus.getRecordEndTime(key);
-      Duration delta = targetDay.difference(start) ;
-      Record newRec = Record.clone(value);
-      newRec.startTime = newRec.startTime.add(delta);
-      newRec.endTime = newRec.endTime.add(delta);
-      retval[newRec.id] = newRec;
-    });
-    return retval;
-  } // create fake records
 
   /// Form a retrieve request and post it
   /// Create a batch, do the batch in batches of 500
