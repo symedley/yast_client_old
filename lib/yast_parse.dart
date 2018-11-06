@@ -79,7 +79,7 @@ Future<Map<String, Record>> getRecordsFrom(xml.XmlDocument xmlBody) async {
   if (null != YastDb.LIMITCOUNTOFRECORDS) {
     xmlObjs.length = YastDb.LIMITCOUNTOFRECORDS;
   }
-  Map<String, dynamic> recs = new Map<String, Record>();
+  Map<String, Record> recs = new Map<String, Record>();
   xmlObjs.forEach((it) {
     Record aRec = new Record.fromXml(it);
     recs[aRec.id] = aRec;
@@ -102,11 +102,8 @@ Future<void> putRecordsInDatabase(Map<String, dynamic> recs) async {
   // so we won't end up with no records if data connection is lost. (I hope)
   debugPrint('==========_putRecordsInDatabase');
 
-  // TODO chg this to only delete old keys = orphans
-//  await _deleteAllDocsInCollection(YastDb.DbRecordsTableName);
-  Set<String> oldKeys= await _getKeysOfCollection(YastDb.DbRecordsTableName);
-
   int counter = 0;
+  Set<String> oldKeys= await _getKeysOfCollection(YastDb.DbRecordsTableName);
 
   WriteBatch batch = Firestore.instance.batch();
   recs.values.forEach((rec) async {
@@ -125,7 +122,8 @@ Future<void> putRecordsInDatabase(Map<String, dynamic> recs) async {
   debugPrint("============== store records count: $counter");
   debugPrint("============== list of record keys to delete: $oldKeys");
 
-  _selectivelyDeleteFromCollection(YastDb.DbRecordsTableName, oldKeys );
+  // the new list of records just gotten from yast.com
+  await _selectivelyDeleteFromCollection(YastDb.DbRecordsTableName, oldKeys);
 
   await batch
       .commit()
@@ -157,7 +155,6 @@ Future<Set<String>> _getKeysOfCollection(String collectionName) async {
 /// Delete only records matching these keys from the named collection
 Future<void> _selectivelyDeleteFromCollection(String collectionName, Set<String> theTargets) async {
   int counter=0;
-  debugPrint("selectively delete these records: $theTargets");
   WriteBatch batch = Firestore.instance.batch();
   theTargets.forEach((String key) {
       if ((counter % YastDb.BATCHLIMIT) == 0) {
@@ -183,6 +180,7 @@ Future<void> _selectivelyDeleteFromCollection(String collectionName, Set<String>
 
 /// Brute force delete all documents in a collection of the given name.
 /// A utility function.
+/// TODO no longer needed?
 Future<void> _deleteAllDocsInCollection(String collectionName) async {
   debugPrint('-------------**********_deleteAllDocsInCollection');
   // TODO a try-catch since for most database errors in deleting old

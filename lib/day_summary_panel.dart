@@ -137,7 +137,7 @@ class _DaySummaryPanelState extends State {
                     // TODO this really should be someplace else--pulling data from database and
                     // putting in app's model.
                     var recordFromDb = Record.fromDocumentSnapshot(ds);
-                    theSavedStatus.records[recordFromDb.id] = recordFromDb;
+                    theSavedStatus.currentRecords[recordFromDb.id] = recordFromDb;
                     theSavedStatus.startTimeToRecord[recordFromDb.startTime] =
                         recordFromDb;
                     //                    debugPrint(
@@ -255,7 +255,7 @@ class _DaySummaryPanelState extends State {
   /// Create pie using flutter_charts
 
   charts.PieChart createPieChartsFlutter(List<charts.Series> data) {
-    return new charts.PieChart(data,
+    var pieChart = new charts.PieChart(data,
         animate: true,
         // Add an [ArcLabelDecorator] configured to render labels outside of the
         // arc with a leader line.
@@ -270,6 +270,7 @@ class _DaySummaryPanelState extends State {
         defaultRenderer: new charts.ArcRendererConfig(
             arcWidth: 60,
             arcRendererDecorators: [new charts.ArcLabelDecorator()]));
+    return pieChart;
 
 //    defaultRenderer: new charts.ArcRendererConfig(arcRendererDecorators: [
 //          new charts.ArcLabelDecorator(

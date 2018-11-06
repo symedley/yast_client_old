@@ -103,7 +103,7 @@ class _MyHomePageState extends State<HomePageRoute> {
         widget.theSavedStatus.hashPasswd,
         widget.theSavedStatus);
     if (recs != null) {
-      widget.theSavedStatus.records = recs;
+      widget.theSavedStatus.currentRecords = recs;
     } else {
       // get the records from the dtabaae
     }

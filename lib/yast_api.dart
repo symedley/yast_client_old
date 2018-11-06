@@ -141,7 +141,7 @@ class YastApi {
         username, hashPwd, _data_getRecords, optParams)
         .timeout(Duration(seconds: Constants.HTTP_TIMEOUT));
 
-    Map<String, dynamic> retval;
+    Map<String, Record> retval;
     if (yr != null) {
       if (yr.status != YastResponse.yastSuccess) {
         debugPrint("Retrieve records failed");
