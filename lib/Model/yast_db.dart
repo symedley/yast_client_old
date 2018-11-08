@@ -8,6 +8,7 @@ class YastDb {
 
 
   static const int BATCHLIMIT = 500;
+  static const int FAKERECORDSBATCHLIMIT = BATCHLIMIT  ~/ 15; // estimate no more than 15 records per day. This is the number of times that one day will be copied, not the total # of records
 
   // for debugging, reduce the number of records to something
   // that i can examine under a debugger. Usually, I get 600+ records.

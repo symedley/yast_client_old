@@ -67,6 +67,7 @@ class Record extends YastObject {
 //  static const million = 1000000;
 //  static const dateConversionFactor = million;
 
+  static const String FIELDSMAPID = "id";
   static const String FIELDSMAPPROJECTID = "project";
   static const String FIELDSMAPTIMEFROM = 'timeFrom';
   static const String FIELDSMAPTIMETO = 'timeTo';
@@ -106,9 +107,9 @@ class Record extends YastObject {
       });
       startTimeStr = variables[0];
       endTimeStr = variables[1];
-      startTime = DateTime.fromMicrosecondsSinceEpoch(
+      startTime = DateTime.fromMillisecondsSinceEpoch(
           int.parse(startTimeStr) * utils.dateConversionFactor);
-      endTime = DateTime.fromMicrosecondsSinceEpoch(
+      endTime = DateTime.fromMillisecondsSinceEpoch(
           int.parse(endTimeStr) * utils.dateConversionFactor);
       comment = variables[2];
       isRunning = variables[3];
@@ -196,9 +197,9 @@ class Record extends YastObject {
       this.endTimeStr = this.yastObjectFieldsMap[Record.FIELDSMAPENDTIME];
       this.comment = this.yastObjectFieldsMap[Record.FIELDSMAPCOMMENT];
       this.isRunning = this.yastObjectFieldsMap[Record.FIELDSMAPISRUNNING];
-      startTime = DateTime.fromMicrosecondsSinceEpoch(
+      startTime = DateTime.fromMillisecondsSinceEpoch(
           int.parse(startTimeStr) * utils.dateConversionFactor);
-      endTime = DateTime.fromMicrosecondsSinceEpoch(
+      endTime = DateTime.fromMillisecondsSinceEpoch(
           int.parse(endTimeStr) * utils.dateConversionFactor);
       this.projectId = this.yastObjectFieldsMap[FIELDSMAPPROJECTID];
     } catch (e) {

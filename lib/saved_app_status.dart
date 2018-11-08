@@ -4,7 +4,7 @@ import 'dart:math';
 import 'Model/project.dart';
 import 'Model/record.dart';
 import 'constants.dart';
-import 'package:intl/intl.dart';
+import 'duration_project.dart';
 
 enum StatusOfApi {
   ApiOk,
@@ -34,9 +34,8 @@ class SavedAppStatus {
     folderIdToName = {};
   }
 
-
   /// used for the developer tools to render a view without real data
-  SavedAppStatus.dummy()  {
+  SavedAppStatus.dummy() {
     SavedAppStatus retval = new SavedAppStatus();
     retval.sttOfApi = StatusOfApi.ApiOk;
     retval.setUsername('noname');
@@ -46,7 +45,9 @@ class SavedAppStatus {
 
   /// Stored Username
   String _username = "";
+
   String getUsername() => this._username;
+
   void setUsername(String newUsername) {
     _username = newUsername;
     _savePreferences(newUsername);
@@ -68,6 +69,7 @@ class SavedAppStatus {
 
   /// Records = timeline records. Map IdString -> Record object
   Map<String, Record> currentRecords = {};
+
   /// Records indexed by their start time, so you can retrieve them in order
   Map<DateTime, Record> startTimeToRecord = {};
 
@@ -81,6 +83,7 @@ class SavedAppStatus {
       return null;
     }
   }
+
   DateTime getRecordStartTime(String id) {
     try {
       return currentRecords[id].startTime;
@@ -111,6 +114,29 @@ class SavedAppStatus {
   /// Projects : look up by id
   /// Look up name or color and don't barf if it's not found.
   Map<String, Project> projects = {};
+  Map<String, Duration> projectNameToDuration = {};
+  Map<String, Duration> projectIdToDuration = {};
+  Map<String, DurationProject> projectIdToDurationProject = {};
+
+  addProject(Project project) {
+    projects[project.id] = project;
+    projectNameToDuration[project.name] = new Duration();
+    projectIdToDuration[project.id] = new Duration();
+    projectIdToDurationProject[project.id] =
+        new DurationProject(new Duration(), project);
+  }
+
+  addAllProjects(Map projMap) {
+    projects = projMap;
+    resetProjectDurationMap();
+    projMap.forEach((name, proj) {
+      projectNameToDuration[name] = new Duration();
+      projectIdToDuration[proj.id] = new Duration();
+      projectIdToDurationProject[proj.id] =
+          new DurationProject(new Duration(), proj);
+    });
+  }
+
   String getProjectNameFromId(String id) {
     if (projects == null) {
       projects = {};
@@ -122,6 +148,7 @@ class SavedAppStatus {
       return "----";
     }
   }
+
   String getProjectColorStringFromId(String id) {
     if (projects == null) {
       projects = {};
@@ -134,8 +161,69 @@ class SavedAppStatus {
     }
   }
 
+  Duration getDurationFromProjectId(String id) {
+    try {
+//      return projectIdToDuration[id];
+      return projectIdToDurationProject[id].duration;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  void addToProjectDuration(
+      {@required project: Project, Duration duration, int secsFromEpoch}) {
+    if ((duration == null)) {
+      if ((secsFromEpoch == null) || (secsFromEpoch <= 0)) {
+        return; // do nothing
+      }
+    } else if (duration.inSeconds <= 0) {
+      if ((secsFromEpoch == null) || (secsFromEpoch <= 0)) {
+        return; // do nothing
+      }
+    }
+    if (project.name != null) {
+      if (projectNameToDuration[project.name] != null) {
+        projectNameToDuration[project.name] += duration;
+        projectIdToDurationProject[project.id].duration += duration;
+      } else {
+        // encountered a new project type?
+        // should it be added in the project duration map?
+      }
+      if (project.id != null) {
+        if (projectNameToDuration[project.id] != null) {
+          projectNameToDuration[project.id] += duration;
+          projectIdToDurationProject[project.id].duration += duration;
+
+        } else {
+          // encountered a new project type?
+          // should it be added in the project duration map?
+        }
+      }
+    }
+  }
+
+  void resetProjectDurationMap() {
+    projectNameToDuration = new Map();
+    projectIdToDuration = new Map();
+    projectIdToDurationProject = new Map();
+  }
+
+  List<MapEntry<String, DurationProject>> sortedProjectDurations() {
+    projectNameToDuration.entries
+        .toList()
+        .sort((MapEntry<String, Duration> a, MapEntry<String, Duration> b) {
+      return (b.value.inMilliseconds - a.value.inMilliseconds);
+    });
+    var tmp = projectIdToDurationProject.entries.toList();
+    tmp.sort((MapEntry<String, DurationProject> a, MapEntry<String, DurationProject> b) {
+      return (b.value.duration.inMilliseconds - a.value.duration.inMilliseconds);
+    });
+    return tmp;
+  }
+
   /// Foldernames, by id
   Map<String, String> folderIdToName = {};
+
   String getFolderNameFromId(String id) {
     if (folderIdToName == null) {
       folderIdToName = {};
@@ -159,6 +247,7 @@ class SavedAppStatus {
       debugPrint(" Failed to get date from shared preferences. $e");
     }
   }
+
   void _savePreferences(String newUsername) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('username', newUsername);

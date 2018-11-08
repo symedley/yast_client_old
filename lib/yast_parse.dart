@@ -119,7 +119,12 @@ Future<void> putRecordsInDatabase(Map<String, dynamic> recs) async {
 
     counter++;
   });
-  debugPrint("============== store records count: $counter");
+  if (true) {
+    batch.commit();
+    batch = Firestore.instance.batch();
+    debugPrint("====final store records count: $counter");
+  }
+  debugPrint("============== total records count: $counter");
   debugPrint("============== list of record keys to delete: $oldKeys");
 
   // the new list of records just gotten from yast.com

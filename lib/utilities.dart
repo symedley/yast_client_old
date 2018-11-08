@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 //
 const int million = 1000000;
 const int thousand = 1000;
-const int dateConversionFactor = million;
+const int dateConversionFactor = thousand;
 
 
 // convert yast date string to a DateTime

@@ -86,6 +86,7 @@ class _MyHomePageState extends State<HomePageRoute> {
     Map<String, Project> projectMap =
         await api.yastRetrieveProjects(widget.theSavedStatus);
 //    widget.theSavedStatus.projectIdToName = projectMap;
+    widget.theSavedStatus.addAllProjects(projectMap);
     widget.theSavedStatus.projects = projectMap;
     widget.theSavedStatus.counterApiCallsCompleted++;
   }

@@ -3,7 +3,6 @@ import 'package:xml/xml.dart' as xml;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../yast_parse.dart' as YastParse;
 
 /// One Project object represents one Project from
 /// Yast's database.

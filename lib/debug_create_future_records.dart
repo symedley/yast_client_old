@@ -7,7 +7,7 @@ import 'Model/yast_db.dart';
 // create copies of records going out into the future.
 // plausible fakes.
 // These must go into the database and be entered using the yast api
-Future<Map<String, Record>> createFutureRecords( Map<String, Record> records) async {
+void createFutureRecords( Map<String, Record> records) async {
   DateTime startReferenceDay = DateTime.parse('2018-10-24 00:00:00');
   DateTime endReferenceDay = DateTime.parse('2018-10-24 23:59:00');
   List<Record> recsToCopy = new List();
@@ -26,7 +26,7 @@ Future<Map<String, Record>> createFutureRecords( Map<String, Record> records) as
   DateTime fakeTime;
   var rng = new Random();
   int recordCount = 0;
-  while (count < 365) {
+  while (count < 5) {
     //does this modify fakeDAte?
     fakeTime = fakeDay.add(new Duration( hours: 7));
 
@@ -43,9 +43,10 @@ Future<Map<String, Record>> createFutureRecords( Map<String, Record> records) as
       Duration randomDur = Duration(minutes: randomInt);
       fakeTime = fakeTime.add(randomDur);
       fakeRecord.endTime = fakeTime;
+      fakeRecord.endTimeStr = dateTimeToYastDate(fakeRecord.endTime);
       String fakeKey = fakeRecord.id + (count.toString());
       fakeRecord.id = fakeKey;
-//      fakeRecord.yastObjectFieldsMap[Record.FIELDSMAPPROJECTID] = fakeKey;
+      fakeRecord.yastObjectFieldsMap[Record.FIELDSMAPID] = fakeKey;
       fakeRecord.yastObjectFieldsMap[Record.FIELDSMAPTIMEFROM] = fakeRecord.startTimeStr;
       fakeRecord.yastObjectFieldsMap[Record.FIELDSMAPTIMETO] = fakeRecord.endTimeStr;
       fakeRecord.yastObjectFieldsMap[Record.FIELDSMAPSTARTTIME] = fakeRecord.startTimeStr;
@@ -56,5 +57,9 @@ Future<Map<String, Record>> createFutureRecords( Map<String, Record> records) as
     fakeDay = fakeDay.add(new Duration(days: 1));
     count++;
   }
-  return newFakeRecords;
+  if (true) {
+    await putRecordsInDatabase(newFakeRecords);
+    newFakeRecords.clear();
+  }
+  return ;
 } // create fake records
