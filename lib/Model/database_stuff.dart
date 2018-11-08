@@ -27,11 +27,7 @@ Future<Map<String,Project>>getProjectIdMapFromDb() async {
     await batch
         .commit()
         .timeout(Duration(seconds: Constants.HTTP_TIMEOUT))
-        .then((it) {
-      debugPrint('id to project map batch result $it');
-    }).whenComplete(() {
-      debugPrint('id to project map batch complete');
-    });
+        ;
   } catch (e) {
     print('Failed to retrieve projects from db and creat  id name map');
     print(e);

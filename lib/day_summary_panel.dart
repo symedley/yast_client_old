@@ -260,7 +260,10 @@ class _DaySummaryPanelState extends State {
         //          insideLabelStyleSpec: new charts.TextStyleSpec(...),
         //          outsideLabelStyleSpec: new charts.TextStyleSpec(...)),
         defaultRenderer:
-            new charts.ArcRendererConfig(arcWidth: 60, arcRendererDecorators: [
+            new charts.ArcRendererConfig(
+//                arcRatio: 0.999,
+                arcWidth: 150,
+                arcRendererDecorators: [
           new charts.ArcLabelDecorator(
               insideLabelStyleSpec: new charts.TextStyleSpec(
                   color: common.Color.black, fontSize: 12),
@@ -330,7 +333,7 @@ class _DaySummaryPanelState extends State {
           data: data,
           // Set a label accessor to control the text of the arc label.
           labelAccessorFn: (PieChartData row, _) =>
-            '${row.getProjectName()}:\n${row.getDuration().ceil()} min',
+            '${row.getProjectName()}',
 
           outsideLabelStyleAccessorFn: _outsideLabelStyleAccessorFn,
           insideLabelStyleAccessorFn: _insideLabelStyleAccessorFn,
@@ -346,13 +349,11 @@ class _DaySummaryPanelState extends State {
   }
 
   common.TextStyleSpec _outsideLabelStyleAccessorFn(PieChartData pcd, int i) {
-    debugPrint('_outsideLabelStyle called');
     return common.TextStyleSpec(
         fontFamily: 'Arial', fontSize: 12, color: common.Color.black);
   }
 
   common.TextStyleSpec _insideLabelStyleAccessorFn(PieChartData pcd, int i) {
-    debugPrint('_insideLabelStyle called');
     return common.TextStyleSpec(
         fontFamily: 'Arial', fontSize: 12, color: common.Color.white);
   }
@@ -400,7 +401,8 @@ class _DaySummaryPanelState extends State {
           Flexible(
               child: Text(
             " ${projectIdToProjDur.value.project.name}",
-            overflow: TextOverflow.ellipsis,
+//                overflow: TextOverflow.ellipsis,
+                overflow: TextOverflow.fade,
           ))
         ]),
       ),

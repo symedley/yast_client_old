@@ -134,11 +134,7 @@ Future<void> putRecordsInDatabase(Map<String, dynamic> recs) async {
   await batch
       .commit()
       .timeout(Duration(seconds: Constants.HTTP_TIMEOUT))
-      .then((it) {
-    debugPrint('records batch result $it');
-  }).whenComplete(() {
-    debugPrint('records batch complete');
-  });
+      ;
 } // _putRecordsInDatabase
 
 /// a List of the keys of the named collection in Firebase Cloud Firestore
@@ -177,11 +173,7 @@ Future<void> _selectivelyDeleteFromCollection(String collectionName, Set<String>
   await batch
       .commit()
       .timeout(Duration(seconds: Constants.HTTP_TIMEOUT))
-      .then((it) {
-    debugPrint('records batch result $it');
-  }).whenComplete(() {
-    debugPrint('records batch complete');
-  });
+      ;
 }
 
 /// Brute force delete all documents in a collection of the given name.
@@ -275,11 +267,7 @@ Future<Map<String, dynamic>> _getYastObjectsFrom(
       YastObject.FIELDSMAPFLAGS: obj.flags,
     });
   });
-  await batch.commit().timeout(Duration(seconds: 30)).then((it) {
-    debugPrint('batch $it');
-  }).whenComplete(() {
-    debugPrint('batch complete');
-  });
+  await batch.commit().timeout(Duration(seconds: 30));
 //    if (whichOne == TypeXmlObject.Folder) {
 //      await _arrangeFoldersInHeirarchy();
 //    }

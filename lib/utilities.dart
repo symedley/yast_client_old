@@ -46,14 +46,14 @@ String dateTimeToYastDate(DateTime inputDate) {
 ///  optional transparency, defaults to 0x88000000
 Color hexToColor(String code, {int transparency = 0xff0000000}) {
   Color retval;
-  debugPrint("hexToColor: $code transparency: $transparency ............");
+//  debugPrint("hexToColor: $code transparency: $transparency ............");
   try {
     retval =  new Color(int.parse(code.substring(1, 7), radix: 16) |
     (transparency));
   } catch (e) {
     retval =  Color(0xffffffffff);
   }
-  debugPrint("hexToColor: $retval ............");
+//  debugPrint("hexToColor: $retval ............");
   return retval;
 }
 
