@@ -59,7 +59,8 @@ class _DaySummaryPanelState extends State {
 
   final SavedAppStatus theSavedStatus;
 
-  charts.PieChart pieChart;
+//  charts.PieChart pieChart;
+  Widget pieChart;
 
   void updateProjectIdToName() async {
     var idToProject = await Firestore.instance
@@ -158,6 +159,8 @@ class _DaySummaryPanelState extends State {
                         recordFromDb;
                     theSavedStatus.startTimeToRecord[recordFromDb.startTime] =
                         recordFromDb;
+                    debugPrint(
+                        'in Streambuilder, retrieved rec: ${recordFromDb.id} ${recordFromDb.comment}');
                     //                    debugPrint(
                     //                        ' --- $i ---> $tmpFromdate , ${recordFromDb.startTime} $toDate');
 //                    i++;
@@ -178,10 +181,19 @@ class _DaySummaryPanelState extends State {
 
                   data = createPieSegmentsChartsFlutter(sorted, theSavedStatus);
 //                  if (pieChart == null) {
-                  pieChart = createPieChartsFlutter(data);
-//                  } else {
-//                    _cyclePieFlutterCharts(pieChart, data);
-//                  }
+                  if (data != null) {
+                    pieChart = createPieChartsFlutter(data);
+                  } else {
+                    // draw a circle instead f a pie chart
+                    pieChart = new Container(
+                      width: Constants.EMPTYPIECIRCLEWIDTH,
+                      height: Constants.EMPTYPIECIRCLEWIDTH,
+                      decoration: new BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                    );
+                  }
                   return Column(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
@@ -204,8 +216,8 @@ class _DaySummaryPanelState extends State {
                         //
                         // Pie chart
                         Container(
-                          height: 300.0,
-                          width: 300.0,
+                          height: Constants.PIECONTAINERWIDTH,
+                          width: Constants.PIECONTAINERWIDTH,
                           child: Center(
                             child: pieChart,
                           ),
@@ -259,17 +271,16 @@ class _DaySummaryPanelState extends State {
         //       new charts.ArcLabelDecorator(
         //          insideLabelStyleSpec: new charts.TextStyleSpec(...),
         //          outsideLabelStyleSpec: new charts.TextStyleSpec(...)),
-        defaultRenderer:
-            new charts.ArcRendererConfig(
+        defaultRenderer: new charts.ArcRendererConfig(
 //                arcRatio: 0.999,
-                arcWidth: 150,
-                arcRendererDecorators: [
-          new charts.ArcLabelDecorator(
-              insideLabelStyleSpec: new charts.TextStyleSpec(
-                  color: common.Color.black, fontSize: 12),
-              outsideLabelStyleSpec: new charts.TextStyleSpec(
-                  color: common.Color.black, fontSize: 12))
-        ]));
+            arcWidth: 150,
+            arcRendererDecorators: [
+              new charts.ArcLabelDecorator(
+                  insideLabelStyleSpec: new charts.TextStyleSpec(
+                      color: common.Color.black, fontSize: 12),
+                  outsideLabelStyleSpec: new charts.TextStyleSpec(
+                      color: common.Color.black, fontSize: 12))
+            ]));
     return pieChart;
 
 //    defaultRenderer: new charts.ArcRendererConfig(arcRendererDecorators: [
@@ -302,27 +313,7 @@ class _DaySummaryPanelState extends State {
     });
     var retval;
     if (data.isEmpty) {
-      data.add(new PieChartData(100.0, "none", "#666666"));
-      data.add(new PieChartData(100.0, "none ", "#888888"));
-      retval = [
-        new charts.Series<PieChartData, int>(
-          id: 'Where time went',
-          domainFn: (PieChartData pcd, _) => (pcd.getDuration().round()),
-          measureFn: (PieChartData pcd, _) => (pcd.getDuration().round()),
-          // dp.getDurationNumber()
-          data: data,
-          // Set a label accessor to control the text of the arc label.
-          labelAccessorFn: (PieChartData row, _) =>
-              'no data for this day',
-          outsideLabelStyleAccessorFn: _outsideLabelStyleAccessorFn,
-          insideLabelStyleAccessorFn: _insideLabelStyleAccessorFn,
-          fillColorFn: (_, __) => common.Color.fromHex(code: '#00FF00'),
-          // common.Color.black ,
-          colorFn: (pieChartData, index) => common.Color.fromHex(
-              code: pieChartData.colorStr),
-          displayName: 'where time went',
-        )
-      ];
+      retval = null;
     } else {
       retval = [
         new charts.Series<PieChartData, int>(
@@ -332,8 +323,7 @@ class _DaySummaryPanelState extends State {
           // dp.getDurationNumber()
           data: data,
           // Set a label accessor to control the text of the arc label.
-          labelAccessorFn: (PieChartData row, _) =>
-            '${row.getProjectName()}',
+          labelAccessorFn: (PieChartData row, _) => '${row.getProjectName()}',
 
           outsideLabelStyleAccessorFn: _outsideLabelStyleAccessorFn,
           insideLabelStyleAccessorFn: _insideLabelStyleAccessorFn,
@@ -402,7 +392,7 @@ class _DaySummaryPanelState extends State {
               child: Text(
             " ${projectIdToProjDur.value.project.name}",
 //                overflow: TextOverflow.ellipsis,
-                overflow: TextOverflow.fade,
+            overflow: TextOverflow.fade,
           ))
         ]),
       ),

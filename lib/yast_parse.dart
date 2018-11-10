@@ -91,7 +91,7 @@ Future<Map<String, Record>> getRecordsFrom(xml.XmlDocument xmlBody) async {
   return recs;
 } //_getRecordsFrom
 
-Future<void> putRecordsInDatabase(Map<String, dynamic> recs) async {
+Future<void> putRecordsInDatabase(Map<String, Record> recs) async {
   // take the things in the variables block
   // that were pulled out in making the Record
   // object and put into the fieldsMap of the
@@ -103,7 +103,9 @@ Future<void> putRecordsInDatabase(Map<String, dynamic> recs) async {
   debugPrint('==========_putRecordsInDatabase');
 
   int counter = 0;
-  Set<String> oldKeys= await _getKeysOfCollection(YastDb.DbRecordsTableName);
+  Set<String> oldKeys;
+  if (recs.isNotEmpty) oldKeys = await _getKeysOfCollection(YastDb.DbRecordsTableName);
+  else oldKeys = new Set();
 
   WriteBatch batch = Firestore.instance.batch();
   recs.values.forEach((rec) async {

@@ -29,6 +29,9 @@ DateTime yastTimetoDateTime(String dateTimeString) {
 
 String dateTimeToYastDate(DateTime inputDate) {
   String retval;
+  if (inputDate == null ) {
+    return null;
+  }
   try{
     int tmp = (inputDate.millisecondsSinceEpoch  / thousand).round();;
     int it = tmp as int;

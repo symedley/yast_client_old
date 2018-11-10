@@ -92,7 +92,7 @@ abstract class YastObject {
   //            <flags>0</flags>
   //        </record>
   //    <objects>
-  XmlElement toXml() {
+  xml.XmlNode toXml() {
     var builder = new xml.XmlBuilder();
     var returnXml = builder.build();
 

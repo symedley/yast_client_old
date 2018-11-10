@@ -72,6 +72,7 @@ class Record extends YastObject {
   static const String FIELDSMAPTIMEFROM = 'timeFrom';
   static const String FIELDSMAPTIMETO = 'timeTo';
   static const String FIELDSMAPUSERID = 'userId';
+  static const String FIELDSMAPTYPEID = "typeId";
 
   static const String FIELDSMAPSTARTTIME = 'startTime';
   static const String FIELDSMAPENDTIME = 'endTime';
@@ -82,6 +83,7 @@ class Record extends YastObject {
 
   static const String __object = "record";
   static const String _variables = "variables";
+  static const String _typeId = "typeId";
 
   //  Record fields. See also those inherited.
   DateTime startTime; // [seconds since 1st of January 1970]
@@ -90,8 +92,10 @@ class Record extends YastObject {
   String endTimeStr;
   String comment;
   String isRunning;
+
 //  String flags;
   String projectId;
+  String typeId;
 
   //  Yast gives us these fields, but I don't use them yet.
   //  String hourlyCost;
@@ -99,6 +103,7 @@ class Record extends YastObject {
   //  String isBillable;
 
   Record.fromXml(XmlElement xmlElement) : super.fromXml(xmlElement, __object) {
+    typeId = yastObjectFieldsMap[FIELDSMAPTYPEID];
     var xmlVariables = xmlElement.findElements(_variables).toList().first;
     List<String> variables = new List();
     try {
@@ -138,41 +143,69 @@ class Record extends YastObject {
   //        </record>
   //    <objects>
   // TODO shoudl it be XmlDocument or XmlElement?
-  XmlElement toXml() {
+  xml.XmlNode toXml() {
     var builder = new xml.XmlBuilder();
     builder.processing('xml', 'version="1.0"');
     builder.element(YastParse.recordStr, nest: () {
-      builder.element('object', nest: () {
-        builder.element('record', nest: () {
-          // ignoring typeId for now
-//          builder.element('typeId', nest: () {
-//            builder.text(this.typeId);
-//          });
-          builder.element('project', nest: () {
-            builder.text(this.projectId);
-          });
-          builder.element('variables', nest: () {
-            builder.element('v', nest: () {
-              builder.text(this.startTimeStr);
-            });
-            builder.element('v', nest: () {
-              builder.text(this.endTimeStr);
-            });
-            builder.element('v', nest: () {
-              builder.text(this.comment);
-            });
-            builder.element('v', nest: () {
-              builder.text(this.isRunning);
-            });
-          });
-          builder.element('flags', nest: () {
-            builder.text(this.flags);
-          });
+      builder.element('typeId', nest: () {
+        builder.text(this.typeId);
+      });
+      builder.element('project', nest: () {
+        builder.text(this.projectId);
+      });
+      builder.element('variables', nest: () {
+        builder.element('v', nest: () {
+          builder.text(this.startTimeStr);
         });
+        builder.element('v', nest: () {
+          builder.text(this.endTimeStr);
+        });
+        builder.element('v', nest: () {
+          builder.text(this.comment);
+        });
+        builder.element('v', nest: () {
+          builder.text(this.isRunning);
+        });
+      });
+      builder.element('flags', nest: () {
+        builder.text(this.flags);
       });
     });
 //    var retval = super.toXml() ;
     return builder.build();
+  } // toXml
+
+  /// return a builder in process so that the document isn't finalized.
+  xml.XmlBuilder toXmlBuilder() {
+    var builder = new xml.XmlBuilder();
+    builder.processing('xml', 'version="1.0"');
+    builder.element(YastParse.recordStr, nest: () {
+      builder.element('typeId', nest: () {
+        builder.text(this.typeId);
+      });
+      builder.element('project', nest: () {
+        builder.text(this.projectId);
+      });
+      builder.element('variables', nest: () {
+        builder.element('v', nest: () {
+          builder.text(this.startTimeStr);
+        });
+        builder.element('v', nest: () {
+          builder.text(this.endTimeStr);
+        });
+        builder.element('v', nest: () {
+          builder.text(this.comment);
+        });
+        builder.element('v', nest: () {
+          builder.text(this.isRunning);
+        });
+      });
+      builder.element('flags', nest: () {
+        builder.text(this.flags);
+      });
+    });
+//    var retval = super.toXml() ;
+    return builder;
   } // toXml
 
   copyVariablesIntoFieldmap() {
@@ -193,6 +226,7 @@ class Record extends YastObject {
   Record.fromDocumentSnapshot(DocumentSnapshot docSnap)
       : super.fromDocSnap(docSnap, __object) {
     try {
+      this.typeId = this.yastObjectFieldsMap[Record.FIELDSMAPTYPEID];
       this.startTimeStr = this.yastObjectFieldsMap[Record.FIELDSMAPSTARTTIME];
       this.endTimeStr = this.yastObjectFieldsMap[Record.FIELDSMAPENDTIME];
       this.comment = this.yastObjectFieldsMap[Record.FIELDSMAPCOMMENT];
@@ -210,6 +244,7 @@ class Record extends YastObject {
 
   Record.clone(Record original) : super.clone(original) {
     try {
+      this.typeId = original.typeId;
       this.startTimeStr = original.startTimeStr;
       this.endTimeStr = original.endTimeStr;
       this.comment = original.comment;
@@ -225,7 +260,7 @@ class Record extends YastObject {
   }
 
   Duration duration() {
-    if ((startTime==null) || (endTime==null)) {
+    if ((startTime == null) || (endTime == null)) {
       return null;
     } else {
       return endTime.difference(startTime);
