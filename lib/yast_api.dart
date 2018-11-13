@@ -139,23 +139,39 @@ class YastApi {
 
   /// Outside classes call this to retrieve all the records
   Future<Map<String, Record>> yastRetrieveRecords(
-      String username, String hashPwd, SavedAppStatus theSavedAppStatus) async {
+      String username, String hashPwd, SavedAppStatus theSavedAppStatus,
+      {startTimeStr: String, endTimeStr: String}) async {
     debugPrint('==========yastRetrieveRcords');
-    DateTime prefDate = theSavedAppStatus.currentDate;
-    if (prefDate == null) {
-      DateTime now = new DateTime.now();
-      prefDate = new DateTime(now.year, now.month, now.day)
-          .subtract(Duration(days: 1));
+
+    DateTime fromDate;
+    String fromDateStr;
+    if (startTimeStr == null) {
+      fromDate = theSavedAppStatus.currentDate;
+      if (fromDate == null) {
+        DateTime now = new DateTime.now();
+        fromDate = new DateTime(now.year, now.month, now.day)
+            .subtract(Duration(days: 1));
+        fromDateStr = dateTimeToYastDate(fromDate);
+      }
+    } else {
+      fromDateStr = startTimeStr;
+      fromDate = yastTimetoDateTime(startTimeStr);
     }
-    String retrieveDateStr = dateTimeToYastDate(prefDate);
+
+    String toDateStr;
+    if (endTimeStr == null) {
+      DateTime toTime;
+      toTime = new DateTime(fromDate.year, fromDate.month, fromDate.day)
+          .add(Duration(days: 5));
+      toDateStr = dateTimeToYastDate(toTime);
+    } else {
+      toDateStr = endTimeStr;
+    }
 
     String optParams =
-        "<" + _timeFromParam + ">$retrieveDateStr</" + _timeFromParam + ">";
-    DateTime toTime = new DateTime(prefDate.year, prefDate.month, prefDate.day)
-        .add(Duration(days: 5));
+        "<" + _timeFromParam + ">$fromDateStr</" + _timeFromParam + ">";
+    optParams += "<" + _timeToParam + ">$toDateStr</" + _timeToParam + ">";
 
-    String toDate = dateTimeToYastDate(toTime);
-    optParams += "<" + _timeToParam + ">$toDate</" + _timeToParam + ">";
     YastResponse yr = await _yastSendRetrieveRequest(
             username, hashPwd, _data_getRecords, optParams)
         .timeout(Duration(seconds: Constants.HTTP_TIMEOUT));
@@ -171,9 +187,9 @@ class YastApi {
         retval = await yastParse.getRecordsFrom(yr.body);
         // temporary: create some fake records, duplicating stuff from oct 24.
         await yastParse.putRecordsInDatabase(retval);
-        Map<String, Record> newFakeRecords =
-            await (debug.createFutureRecords(retval));
-        await yastStoreNewRecords(theSavedAppStatus, newFakeRecords);
+//        Map<String, Record> newFakeRecords =
+//            await (debug.createFutureRecords(retval));
+//        await yastStoreNewRecords(theSavedAppStatus, newFakeRecords);
 //        } catch (e) {
 //          debugPrint("exception retrieving records");
 //          throw (e);
@@ -211,10 +227,21 @@ class YastApi {
     DateTime newToDate =
         DateTime(toDate.year, toDate.month, toDate.day, 23, 59, 0);
     String toDateString = dateTimeToYastDate(newToDate);
+
+    // This retrieves from yast and stores in database,
+    // in case this range of records hasn't been retrieved yet.
+    // That way, we can pull the ids from the database.
+    Map<String, Record> recs = await yastRetrieveRecords(
+        theSavedStatus.getUsername(),
+        theSavedStatus.hashPasswd,
+        theSavedStatus,
+        startTimeStr: fromDateString,
+        endTimeStr: toDateString);
+
     Query query = Firestore.instance
         .collection(YastDb.DbRecordsTableName)
         .where('startTime', isGreaterThanOrEqualTo: fromDateString)
-        .where('startTime', isGreaterThanOrEqualTo: toDateString);
+        .where('startTime', isLessThanOrEqualTo: toDateString);
     QuerySnapshot qss = await query.getDocuments();
     List<String> ids = new List();
     qss.documents.forEach((docSnap) {
@@ -223,38 +250,24 @@ class YastApi {
       String id = docSnap.reference.path
           .substring(startchar, docSnap.reference.path.length);
       ids.add(id);
+      debugPrint(" delete record start time: $docSnap.data");
     });
 
-    String optParams = "";
+    debugPrint('ids to delete: $ids');
     YastResponse yr = await _yastSendDeleteRequest(theSavedStatus.getUsername(),
             theSavedStatus.hashPasswd, _data_delete, ids)
         .timeout(Duration(seconds: Constants.HTTP_TIMEOUT));
+    await yastParse.selectivelyDeleteFromCollection(
+        YastDb.DbRecordsTableName, ids.toSet());
+    theSavedStatus.currentRecords.removeWhere((String s, Record rec) {
+      var result = ((rec.startTimeStr.compareTo(fromDateString) >= 0) &&
+          (rec.startTimeStr.compareTo(toDateString) <= 0));
+      return result;
+    });
+
+    debugPrint(
+        "yastResponse for yastDeleteRecords: ${yr.status} ${yr.statusString}");
     return yr;
-//
-//    Map<String, Record> retval;
-//    if (yr != null) {
-//      if (yr.status != YastResponse.yastSuccess) {
-//        debugPrint("Retrieve records failed");
-//        debugPrint(yr.statusString);
-//        return null;
-//      } else {
-//        try {
-//        retval = await yastParse.getRecordsFrom(yr.body);
-//         temporary: create some fake records, duplicating stuff from oct 24.
-//        await yastParse.putRecordsInDatabase(retval);
-//        Map<String, Record> newFakeRecords =
-//        await (debug.createFutureRecords(retval));
-//        await yastStoreNewRecords(theSavedAppStatus, newFakeRecords);
-//        } catch (e) {
-//          debugPrint("exception retrieving records");
-//          throw (e);
-//        }
-//      }
-//      return retval;
-//    } else {
-//      debugPrint("yastResponse is null $yr");
-//      return null;
-//    }
   } // yastDeleteRecords
 
   /// Send a write-data message back to yast: store these records
@@ -269,18 +282,6 @@ class YastApi {
       return null;
     }
     newRecords.forEach((k, Record record) async {
-//      String optParams = '''
-//      <objects>
-//      <record>
-//     				<project>25004070</project>
-//				<variables>
-//						<v>record.</v>
-//						<v>150611702</v>
-//						<v>some comment</v>
-//						<v>0</v>
-//				</variables>
-//				<flags>0</flags>
-//				 </record></objects> ''';
       debugPrint('storing rec: id:${record.id} comment:${record.comment}');
       var builder = new xml.XmlBuilder();
       xml.XmlNode xmlNode = record.toXml();
@@ -357,7 +358,7 @@ class YastApi {
   Future<YastResponse> _yastSendDeleteRequest(String username, String hashPwd,
       String httpRequestString, List<String> ids) async {
     var builder = new xml.XmlBuilder();
-    builder.processing('xml', 'version="1.0"');
+//    builder.processing('xml', 'version="1.0"');
 //    xml.XmlNode xmlNode = record.toXmlForDeletion();
     ids.forEach((id) {
       builder.element('record', nest: () {
@@ -368,7 +369,7 @@ class YastApi {
     });
     var builder2 = new xml.XmlBuilder();
     xml.XmlNode xmlNode = builder.build();
-    builder2.element('objects', nest: xmlNode.parent);
+    builder2.element('objects', nest: xmlNode.children);
     String optParams = builder2.build().toXmlString();
     String xmlToSend = '<request req="' +
         httpRequestString +

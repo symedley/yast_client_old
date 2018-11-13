@@ -130,7 +130,7 @@ Future<void> putRecordsInDatabase(Map<String, Record> recs) async {
   debugPrint("============== list of record keys to delete: $oldKeys");
 
   // the new list of records just gotten from yast.com
-  await _selectivelyDeleteFromCollection(YastDb.DbRecordsTableName, oldKeys);
+  await selectivelyDeleteFromCollection(YastDb.DbRecordsTableName, oldKeys);
   // TODO if saving is done in batches, when do i selectivelhy delete?
 
   await batch
@@ -156,8 +156,8 @@ Future<Set<String>> _getKeysOfCollection(String collectionName) async {
   return retval;
 } //_getKeysOfACollection
 
-/// Delete only records matching these keys from the named collection
-Future<void> _selectivelyDeleteFromCollection(String collectionName, Set<String> theTargets) async {
+/// Delete only records matching these keys from the named Firestore collection
+Future<void> selectivelyDeleteFromCollection(String collectionName, Set<String> theTargets) async {
   int counter=0;
   WriteBatch batch = Firestore.instance.batch();
   theTargets.forEach((String key) {
@@ -174,8 +174,7 @@ Future<void> _selectivelyDeleteFromCollection(String collectionName, Set<String>
     });
   await batch
       .commit()
-      .timeout(Duration(seconds: Constants.HTTP_TIMEOUT))
-      ;
+      .timeout(Duration(seconds: Constants.HTTP_TIMEOUT));
 }
 
 /// Brute force delete all documents in a collection of the given name.

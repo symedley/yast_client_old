@@ -9,8 +9,8 @@ import 'package:flutter/foundation.dart';
 // plausible fakes.
 // These must go into the database and be entered using the yast api
 Future<Map<String, Record>> createFutureRecords( Map<String, Record> records) async {
-  DateTime startReferenceDay = DateTime.parse('2018-11-10 00:00:00');
-  DateTime endReferenceDay = DateTime.parse('2018-11-10 23:59:00');
+  DateTime startReferenceDay = DateTime.parse('2018-10-24 00:00:00');
+  DateTime endReferenceDay = DateTime.parse('2018-10-24 23:59:00');
   List<Record> recsToCopy = new List();
   DateTime today = DateTime.now();
   DateTime fakeDay = DateTime.now();
