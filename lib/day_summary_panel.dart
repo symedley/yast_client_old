@@ -20,7 +20,7 @@ const double barWidth = 200.0;
 const double loginStatusWidth = 400.0;
 const double pieChartWidth = 300.0;
 const double barHeight = 30.0;
-const Color dateChooserButtonColor = Color(0xff9e9e9e); //Colors.grey[300];??
+//const Color dateChooserButtonColor = Color(0xff9e9e9e); //Colors.grey[300];??
 //const Color dummy  = Colors.grey[400];
 const String rankKeyStr = "pie";
 const String segmentKeyStr = "segment";
@@ -75,7 +75,7 @@ class _DaySummaryPanelState extends State {
   void _onTap() async {}
 
   void _pickDate() async {
-    utilities.showSnackbar(_scaffoldContext, 'flat button was clicked');
+//    utilities.showSnackbar(_scaffoldContext, 'flat button was clicked');
     var tmpDate = await showDatePicker(
         context: _scaffoldContext,
         initialDate: _fromDate,
@@ -206,7 +206,7 @@ class _DaySummaryPanelState extends State {
                           height: barHeight,
                           child: FlatButton(
                             onPressed: _pickDate,
-                            color: dateChooserButtonColor,
+                            color: Constants.dateChooserButtonColor,
                             child: Text(
                               DateFormat.MMMMd().format(_fromDate),
                               style: TextStyle(color: Colors.black),

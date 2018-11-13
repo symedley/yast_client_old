@@ -2,7 +2,6 @@ import 'dart:math';
 import 'Model/record.dart';
 import 'utilities.dart';
 import 'yast_parse.dart';
-import 'yast_api.dart';
 import 'Model/yast_db.dart';
 import 'package:flutter/foundation.dart';
 
@@ -22,7 +21,7 @@ Future<Map<String, Record>> createFutureRecords( Map<String, Record> records) as
         (start.compareTo(endReferenceDay) < 0)) {
       recsToCopy.add(value);
     }
-    if (value.startTime.compareTo( fakeDay) < 0){
+    if (value.startTime.compareTo( fakeDay) > 0){
       fakeDay = value.startTime;
     }
   });

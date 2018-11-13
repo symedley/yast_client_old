@@ -1,14 +1,15 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
 import 'saved_app_status.dart';
 import 'login_page.dart';
 import 'yast_api.dart';
 import 'main.dart';
 import 'display_login_status.dart';
+import 'utilities.dart' as utilities;
+import 'constants.dart';
 import 'Model/database_stuff.dart';
-
-//import 'main.dart:StatusOfApi' as StatusOfApi;
 import 'Model/project.dart';
 import 'Model/record.dart';
 
@@ -135,6 +136,10 @@ class _MyHomePageState extends State<HomePageRoute> {
     });
   }
 
+  void _deleteRecordsButtonPressed() {
+    debugPrint('==========_deleteDatesButtonPressed');
+  }
+
   /// Use the YastApi to send an async message
   /// to the Yast.com API.
   Future<void> _loginToYast() async {
@@ -170,6 +175,59 @@ class _MyHomePageState extends State<HomePageRoute> {
     }
   }
 
+  int _beginDaySeconds, _endDaySeconds;
+  BuildContext _scaffoldContext;
+
+  DateTime _fromDateDelete, _toDateDelete;
+  String _fromDateDeleteString = '', _toDateDeleteString = '';
+
+  Future<DateTime> _pickDeleteFromDate() async {
+   DateTime date = await _pickDate();
+    if (date == null) {
+      return null;
+    } else {
+      setState(() {
+        _fromDateDelete = date;
+        _fromDateDeleteString = DateFormat.Md().format(_fromDateDelete);
+        _beginDaySeconds = _fromDateDelete.millisecondsSinceEpoch ~/
+            utilities.dateConversionFactor;
+      });
+      return _fromDateDelete;
+    }
+  }
+
+  Future<DateTime> _pickDeleteToDate() async {
+    DateTime date = await _pickDate();
+    if (date == null) {
+      return null;
+    } else {
+      setState(() {
+        _toDateDelete = date;
+        _toDateDeleteString = DateFormat.Md().format(_toDateDelete);
+        _beginDaySeconds = date.millisecondsSinceEpoch ~/
+            utilities.dateConversionFactor;
+      });
+      return _toDateDelete;
+    }
+  }
+
+  Future<DateTime> _pickDate() async {
+    DateTime retval = _fromDateDelete;
+    if (retval == null) {
+      retval = DateTime.now();
+      retval = DateTime(retval.year, retval.month, retval.day);
+    }
+    var tmpDate = await showDatePicker(
+        context: _scaffoldContext,
+        initialDate: retval,
+        firstDate: new DateTime(2018, 1, 1),
+        lastDate: new DateTime(2018, 12, 31));
+    retval = (tmpDate == null) ? retval : tmpDate;
+    return retval;
+//    _endDaySeconds =
+//        tmp.millisecondsSinceEpoch ~/ utilities.dateConversionFactor;
+  }
+
   void mapTheProjectIdAndNames() async {
     if (widget.theSavedStatus.projects.isEmpty) {
       // build the projectidmap
@@ -181,6 +239,17 @@ class _MyHomePageState extends State<HomePageRoute> {
   // This method is rerun every time setState is called.
   @override
   Widget build(BuildContext context) {
+    this._scaffoldContext = context;
+
+    if (_fromDateDelete == null) {
+      _fromDateDelete = DateTime.now();
+      _fromDateDelete = DateTime(_fromDateDelete.year, _fromDateDelete.month, _fromDateDelete.day);
+    }
+    if (_toDateDelete == null) {
+      _toDateDelete = DateTime.now();
+      _toDateDelete = DateTime(_toDateDelete.year, _toDateDelete.month, _toDateDelete.day);
+    }
+
     mapTheProjectIdAndNames();
     var loginButton =
         FlatButton(onPressed: _loginButtonPressed, child: Text("Login"));
@@ -188,6 +257,20 @@ class _MyHomePageState extends State<HomePageRoute> {
         FlatButton(onPressed: _resetButtonPressed, child: Text("Reset"));
     var logoutButton =
         FlatButton(onPressed: _logoutButtonPressed, child: Text("Logout"));
+    var deleteRecordsButton =
+      Container(
+        padding: EdgeInsets.only(top: 10.0),
+        alignment: Alignment(0.0, -1.0),
+        width: 300.0,
+        height: 60.0,
+        child: FlatButton(
+          onPressed: _deleteRecordsButtonPressed,
+          color: Constants.deleteButtonColor,
+          child: Text( "Delete records from $_fromDateDeleteString...to $_toDateDeleteString",
+            style: TextStyle(color: Colors.black),
+          ),
+        ),
+      );
     var body;
 
     var rowCountersText = Row(
@@ -247,6 +330,41 @@ class _MyHomePageState extends State<HomePageRoute> {
         ),
       ],
     );
+
+    Widget deleteDatesPickers = Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          padding: EdgeInsets.only(top: 10.0),
+          alignment: Alignment(0.0, -1.0),
+          width: 180.0,
+          height: 30.0,
+          child: FlatButton(
+            onPressed: _pickDeleteFromDate,
+            color: Constants.dateChooserButtonColor,
+            child: Text(
+              (_fromDateDelete == null) ? 'From: <date>' : 'From: ' + DateFormat.yMd().format(_fromDateDelete),
+              style: TextStyle(color: Colors.black),
+            ),
+          ),
+        ),
+        Container(
+          padding: EdgeInsets.only(top: 10.0),
+          alignment: Alignment(0.0, -1.0),
+          width: 180.0,
+          height: 30.0,
+          child: FlatButton(
+            onPressed: _pickDeleteToDate,
+            color: Constants.dateChooserButtonColor,
+            child: Text(
+              (_toDateDelete == null) ? 'To: <date>' : 'To: ' + DateFormat.yMd().format(_toDateDelete),
+              style: TextStyle(color: Colors.black),
+            ),
+          ),
+        ),
+      ],
+    );
+
     if (widget.theSavedStatus.showValidationError == true) {
       body = Center(
         child: Padding(
@@ -298,6 +416,8 @@ class _MyHomePageState extends State<HomePageRoute> {
             ),
             rowCountersText,
             rowCounters,
+            deleteDatesPickers,
+            deleteRecordsButton ,
             logoutButton
           ];
           break;

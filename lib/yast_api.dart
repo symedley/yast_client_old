@@ -141,16 +141,15 @@ class YastApi {
     DateTime prefDate = theSavedAppStatus.currentDate;
     if (prefDate == null) {
       DateTime now = new DateTime.now();
-      prefDate = new DateTime(now.year, now.month, now.day).subtract(Duration(days:1));
+      prefDate = new DateTime(now.year, now.month, now.day)
+          .subtract(Duration(days: 1));
     }
     String retrieveDateStr = dateTimeToYastDate(prefDate);
 
     String optParams =
         "<" + _timeFromParam + ">$retrieveDateStr</" + _timeFromParam + ">";
-    DateTime toTime = new DateTime(
-         prefDate.year,
-         prefDate.month,
-         prefDate.day).add(Duration(days: 5));
+    DateTime toTime = new DateTime(prefDate.year, prefDate.month, prefDate.day)
+        .add(Duration(days: 5));
 
     String toDate = dateTimeToYastDate(toTime);
     optParams += "<" + _timeToParam + ">$toDate</" + _timeToParam + ">";
@@ -184,6 +183,54 @@ class YastApi {
     }
   } // yastRetrieveRecords
 
+  /// Outside classes call this to retrieve all the records
+  Future<Map<String, Record>> yastDeleteRecords(
+      String username,
+      String hashPwd,
+      SavedAppStatus theSavedAppStatus,
+      DateTime _fromDate,
+      DateTime _toDate) async {
+    debugPrint('==========yastDeleteRcords');
+
+//    String optParams =
+//        "<" + _timeFromParam + ">$retrieveDateStr</" + _timeFromParam + ">";
+//    DateTime toTime = new DateTime(
+//        prefDate.year,
+//        prefDate.month,
+//        prefDate.day).add(Duration(days: 5));
+//
+//    String toDate = dateTimeToYastDate(toTime);
+//    optParams += "<" + _timeToParam + ">$toDate</" + _timeToParam + ">";
+//    YastResponse yr = await _yastSendRetrieveRequest(
+//        username, hashPwd, _data_getRecords, optParams)
+//        .timeout(Duration(seconds: Constants.HTTP_TIMEOUT));
+//
+//    Map<String, Record> retval;
+//    if (yr != null) {
+//      if (yr.status != YastResponse.yastSuccess) {
+//        debugPrint("Retrieve records failed");
+//        debugPrint(yr.statusString);
+//        return null;
+//      } else {
+//        try {
+//        retval = await yastParse.getRecordsFrom(yr.body);
+//         temporary: create some fake records, duplicating stuff from oct 24.
+//        await yastParse.putRecordsInDatabase(retval);
+//        Map<String, Record> newFakeRecords =
+//        await (debug.createFutureRecords(retval));
+//        await yastStoreNewRecords(theSavedAppStatus, newFakeRecords);
+//        } catch (e) {
+//          debugPrint("exception retrieving records");
+//          throw (e);
+//        }
+//      }
+//      return retval;
+//    } else {
+//      debugPrint("yastResponse is null $yr");
+//      return null;
+//    }
+  } // yastDeleteRecords
+
   /// Send a write-data message back to yast: store these records
   /// TODO there's a limit on the number of records you can do at once,
   /// so chunk this into smaller pieces. For now, i just won't store that
@@ -213,11 +260,8 @@ class YastApi {
       xml.XmlNode xmlNode = record.toXml();
       builder.element('objects', nest: xmlNode.children.last);
       String optParams = builder.build().toXmlString();
-       yr = await _yastSendStoreRequest(
-              theSavedAppStatus.getUsername(),
-              theSavedAppStatus.hashPasswd,
-              _data_add,
-              optParams)
+      yr = await _yastSendStoreRequest(theSavedAppStatus.getUsername(),
+              theSavedAppStatus.hashPasswd, _data_add, optParams)
           .timeout(Duration(seconds: Constants.HTTP_TIMEOUT));
 //      debugPrint(yr.toString());
     });
