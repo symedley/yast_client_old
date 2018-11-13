@@ -1,5 +1,6 @@
 import 'dart:core';
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:xml/xml.dart' as xml;
 import 'yast_parse.dart' as yastParse;
@@ -9,6 +10,7 @@ import 'constants.dart';
 import 'saved_app_status.dart';
 import 'Model/project.dart';
 import 'Model/record.dart';
+import 'Model/yast_db.dart';
 import 'utilities.dart';
 import 'debug_create_future_records.dart' as debug;
 
@@ -22,6 +24,7 @@ class YastApi {
   static const String _data_getRecords = "data.getRecords";
   static const String _data_getFolders = "data.getFolders";
   static const String _data_getProjects = "data.getProjects";
+  static const String _data_delete = "data.delete";
 
   static const String _data_add = "data.add";
 
@@ -183,27 +186,50 @@ class YastApi {
     }
   } // yastRetrieveRecords
 
-  /// Outside classes call this to retrieve all the records
-  Future<Map<String, Record>> yastDeleteRecords(
-      String username,
-      String hashPwd,
-      SavedAppStatus theSavedAppStatus,
-      DateTime _fromDate,
-      DateTime _toDate) async {
+  /// Outside classes call this to delete a range of time records
+  /// xml format: TODO
+  /// request req="data.delete" id="133">
+  //    <objects>
+  //        <record>
+  //            <id>8282</id>
+  //        </record>
+  //        <group>
+  //            <id>132</id>
+  //        </group>
+  //    <objects>
+  //</response>
+  Future<YastResponse> yastDeleteRecords(
+      //      String username,
+      //      String hashPwd,
+      SavedAppStatus theSavedStatus,
+      DateTime fromDate,
+      DateTime toDate) async {
     debugPrint('==========yastDeleteRcords');
 
-//    String optParams =
-//        "<" + _timeFromParam + ">$retrieveDateStr</" + _timeFromParam + ">";
-//    DateTime toTime = new DateTime(
-//        prefDate.year,
-//        prefDate.month,
-//        prefDate.day).add(Duration(days: 5));
-//
-//    String toDate = dateTimeToYastDate(toTime);
-//    optParams += "<" + _timeToParam + ">$toDate</" + _timeToParam + ">";
-//    YastResponse yr = await _yastSendRetrieveRequest(
-//        username, hashPwd, _data_getRecords, optParams)
-//        .timeout(Duration(seconds: Constants.HTTP_TIMEOUT));
+    String fromDateString = dateTimeToYastDate(
+        DateTime(fromDate.year, fromDate.month, fromDate.day));
+    DateTime newToDate =
+        DateTime(toDate.year, toDate.month, toDate.day, 23, 59, 0);
+    String toDateString = dateTimeToYastDate(newToDate);
+    Query query = Firestore.instance
+        .collection(YastDb.DbRecordsTableName)
+        .where('startTime', isGreaterThanOrEqualTo: fromDateString)
+        .where('startTime', isGreaterThanOrEqualTo: toDateString);
+    QuerySnapshot qss = await query.getDocuments();
+    List<String> ids = new List();
+    qss.documents.forEach((docSnap) {
+      docSnap.data.keys;
+      int startchar = 1 + docSnap.reference.path.indexOf('/', 0);
+      String id = docSnap.reference.path
+          .substring(startchar, docSnap.reference.path.length);
+      ids.add(id);
+    });
+
+    String optParams = "";
+    YastResponse yr = await _yastSendDeleteRequest(theSavedStatus.getUsername(),
+            theSavedStatus.hashPasswd, _data_delete, ids)
+        .timeout(Duration(seconds: Constants.HTTP_TIMEOUT));
+    return yr;
 //
 //    Map<String, Record> retval;
 //    if (yr != null) {
@@ -301,17 +327,19 @@ class YastApi {
   Future<YastResponse> _yastSendRetrieveRequest(
       String username, String hashPwd, String httpRequestString,
       [String optionalParams]) async {
-    if ((username == null) || (username.runtimeType != String)) {
-      debugPrint("Attempt to retrieve something when there is no username!");
-      debugPrint("username = $username");
-      return null;
-    }
-    if ((hashPwd == null) || (hashPwd.runtimeType != String)) {
-      debugPrint(
-          "Attempt to retrieve something when there is no hash password!");
-      debugPrint("hashPwd = $hashPwd");
-      return null;
-    }
+    if (_basicCheck(username, hashPwd) == false) return null;
+
+//    if ((username == null) || (username.runtimeType != String)) {
+//      debugPrint("Attempt to retrieve something when there is no username!");
+//      debugPrint("username = $username");
+//      return null;
+//    }
+//    if ((hashPwd == null) || (hashPwd.runtimeType != String)) {
+//      debugPrint(
+//          "Attempt to retrieve something when there is no hash password!");
+//      debugPrint("hashPwd = $hashPwd");
+//      return null;
+//    }
     optionalParams ??= "";
     String xmlToSend = '<request req="' +
         httpRequestString +
@@ -325,4 +353,46 @@ class YastApi {
     return await yasthttp.sendToYastApi(xmlToSend);
   } //_yastSendRetrieveRequest
 
+  /// Must put each record id in an xml block and all of that in an <object> block
+  Future<YastResponse> _yastSendDeleteRequest(String username, String hashPwd,
+      String httpRequestString, List<String> ids) async {
+    var builder = new xml.XmlBuilder();
+    builder.processing('xml', 'version="1.0"');
+//    xml.XmlNode xmlNode = record.toXmlForDeletion();
+    ids.forEach((id) {
+      builder.element('record', nest: () {
+        builder.element('id', nest: () {
+          builder.text(id);
+        });
+      });
+    });
+    var builder2 = new xml.XmlBuilder();
+    xml.XmlNode xmlNode = builder.build();
+    builder2.element('objects', nest: xmlNode.parent);
+    String optParams = builder2.build().toXmlString();
+    String xmlToSend = '<request req="' +
+        httpRequestString +
+        '" id="${sendCounter.toString()}">' +
+        '<user><![CDATA[$username]]></user>' +
+        '<hash><![CDATA[$hashPwd]]></hash>' +
+        optParams +
+        _close_request_string;
+    sendCounter++;
+    return await yasthttp.sendToYastApi(xmlToSend);
+  } //_yastSendDeleteRequest
+
+  bool _basicCheck(String username, String hashPwd) {
+    if ((username == null) || (username.runtimeType != String)) {
+      debugPrint("Attempt to retrieve something when there is no username!");
+      debugPrint("username = $username");
+      return false;
+    }
+    if ((hashPwd == null) || (hashPwd.runtimeType != String)) {
+      debugPrint(
+          "Attempt to retrieve something when there is no hash password!");
+      debugPrint("hashPwd = $hashPwd");
+      return false;
+    }
+    return true;
+  }
 }

@@ -175,6 +175,31 @@ class Record extends YastObject {
     return builder.build();
   } // toXml
 
+  /// deletions are done in a block saying what
+  /// the thing is (<record>) and holding just the id#
+  /// And the list of those blocks is in an <objects> block
+  //    <objects>
+  //        <record>
+  //            <id>8282</id>
+  //        </record>
+  //        <group>
+  //            <id>132</id>
+  //        </group>
+  //    <objects>
+  //</response>
+xml.XmlNode toXmlForDeletion() {
+    var builder = new xml.XmlBuilder();
+    builder.processing('xml', 'version="1.0"');
+    builder.element(YastParse.recordStr, nest: () {
+      builder.element(YastParse.recordStr, nest: () {
+        builder.element('id', nest: () {
+          builder.text(this.id);
+        });
+      });
+    });
+    return builder.build();
+  } // toXmlForDeletion
+
   /// return a builder in process so that the document isn't finalized.
   xml.XmlBuilder toXmlBuilder() {
     var builder = new xml.XmlBuilder();

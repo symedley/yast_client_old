@@ -136,8 +136,20 @@ class _MyHomePageState extends State<HomePageRoute> {
     });
   }
 
-  void _deleteRecordsButtonPressed() {
+  void _deleteRecordsButtonPressed() async {
     debugPrint('==========_deleteDatesButtonPressed');
+    YastApi api = YastApi.getApi();
+    widget.theSavedStatus.counterApiCallsStarted++;
+    await api.yastDeleteRecords(widget.theSavedStatus, _fromDateDelete, _toDateDelete);
+//    widget.theSavedStatus.projectIdToName = projectMap;
+    // TODO remove those from the local cache of records (map)
+  }
+
+
+  /// retrieve Records AND CREATE TIMELINE LIST from the yast API.
+  /// Build a List of the records for aSavedState
+  /// Also build a TimelineModel list to store in aSavedState
+  Future<void> _deleteRecords(SavedAppStatus theSavedStatus, DateTime fromDate, DateTime toDate) async {
   }
 
   /// Use the YastApi to send an async message
