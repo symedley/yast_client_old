@@ -151,11 +151,11 @@ class YastApi {
         DateTime now = new DateTime.now();
         fromDate = new DateTime(now.year, now.month, now.day)
             .subtract(Duration(days: 1));
-        fromDateStr = dateTimeToYastDate(fromDate);
+        fromDateStr = localDateTimeToYastDate(fromDate);
       }
     } else {
       fromDateStr = startTimeStr;
-      fromDate = yastTimetoDateTime(startTimeStr);
+      fromDate = yastTimetoLocalDateTime(startTimeStr);
     }
 
     String toDateStr;
@@ -163,7 +163,7 @@ class YastApi {
       DateTime toTime;
       toTime = new DateTime(fromDate.year, fromDate.month, fromDate.day)
           .add(Duration(days: 5));
-      toDateStr = dateTimeToYastDate(toTime);
+      toDateStr = localDateTimeToYastDate(toTime);
     } else {
       toDateStr = endTimeStr;
     }
@@ -222,11 +222,11 @@ class YastApi {
       DateTime toDate) async {
     debugPrint('==========yastDeleteRcords');
 
-    String fromDateString = dateTimeToYastDate(
+    String fromDateString = localDateTimeToYastDate(
         DateTime(fromDate.year, fromDate.month, fromDate.day));
     DateTime newToDate =
         DateTime(toDate.year, toDate.month, toDate.day, 23, 59, 0);
-    String toDateString = dateTimeToYastDate(newToDate);
+    String toDateString = localDateTimeToYastDate(newToDate);
 
     // This retrieves from yast and stores in database,
     // in case this range of records hasn't been retrieved yet.
@@ -257,6 +257,7 @@ class YastApi {
     YastResponse yr = await _yastSendDeleteRequest(theSavedStatus.getUsername(),
             theSavedStatus.hashPasswd, _data_delete, ids)
         .timeout(Duration(seconds: Constants.HTTP_TIMEOUT));
+    theSavedStatus.message = 'Attempt to delete ${ids.length} records, response ${yr.statusString}';
     await yastParse.selectivelyDeleteFromCollection(
         YastDb.DbRecordsTableName, ids.toSet());
     theSavedStatus.currentRecords.removeWhere((String s, Record rec) {

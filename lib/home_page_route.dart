@@ -145,13 +145,6 @@ class _MyHomePageState extends State<HomePageRoute> {
     // TODO remove those from the local cache of records (map)
   }
 
-
-  /// retrieve Records AND CREATE TIMELINE LIST from the yast API.
-  /// Build a List of the records for aSavedState
-  /// Also build a TimelineModel list to store in aSavedState
-  Future<void> _deleteRecords(SavedAppStatus theSavedStatus, DateTime fromDate, DateTime toDate) async {
-  }
-
   /// Use the YastApi to send an async message
   /// to the Yast.com API.
   Future<void> _loginToYast() async {
@@ -424,7 +417,7 @@ class _MyHomePageState extends State<HomePageRoute> {
             ),
             new Text(
               '${widget.theSavedStatus.message}',
-              style: Theme.of(context).textTheme.display1,
+              style: Theme.of(context).textTheme.subhead,
             ),
             rowCountersText,
             rowCounters,
@@ -442,7 +435,7 @@ class _MyHomePageState extends State<HomePageRoute> {
             ),
             new Text(
               '${widget.theSavedStatus.message}',
-              style: Theme.of(context).textTheme.display1,
+              style: Theme.of(context).textTheme.subhead,
             ),
             new Text(
               api_login_needed_description,

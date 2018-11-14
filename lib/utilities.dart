@@ -11,14 +11,17 @@ const int thousand = 1000;
 const int dateConversionFactor = thousand;
 
 
-// convert yast date string to a DateTime
-DateTime yastTimetoDateTime(String dateTimeString) {
+/// Convert a yast time string to a DateTime object in local time
+///
+/// Yast time strings are seconds since epoch in UTC.
+DateTime yastTimetoLocalDateTime(String dateTimeString) {
   DateTime retval;
   try {
     int millisecondsSinceEpoch = int.parse(dateTimeString) *
         dateConversionFactor;
-    retval = new DateTime.fromMillisecondsSinceEpoch(
-        millisecondsSinceEpoch);
+    DateTime utc = new DateTime.fromMillisecondsSinceEpoch(
+        millisecondsSinceEpoch, isUtc: true);
+    retval = utc.toLocal();
   } catch (e) {
     debugPrint(e);
     debugPrint("------failure converting date-------");
@@ -27,13 +30,17 @@ DateTime yastTimetoDateTime(String dateTimeString) {
   return retval;
 }
 
-String dateTimeToYastDate(DateTime inputDate) {
+/// convert a DateTime object in local time into a yast time string
+/// which is seconds since epoch in _UTC_
+String localDateTimeToYastDate(DateTime inputDate) {
   String retval;
   if (inputDate == null ) {
     return null;
   }
   try{
-    int tmp = (inputDate.millisecondsSinceEpoch  / thousand).round();;
+    DateTime utc = inputDate.toUtc();
+    int tmp = (inputDate.millisecondsSinceEpoch  / dateConversionFactor).round();
+    tmp = (utc.millisecondsSinceEpoch  / dateConversionFactor).round();
     int it = tmp as int;
     retval = it.toString();
   }

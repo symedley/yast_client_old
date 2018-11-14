@@ -32,6 +32,7 @@ class SavedAppStatus {
     currentRecords = {};
     startTimeToRecord = {};
     folderIdToName = {};
+    message = '';
   }
 
   /// used for the developer tools to render a view without real data

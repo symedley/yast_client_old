@@ -43,12 +43,12 @@ Future<Map<String, Record>> createFutureRecords( Map<String, Record> records) as
       recordCount++;
       Record fakeRecord = Record.clone(rec);
       fakeRecord.startTime = fakeTime;
-      fakeRecord.startTimeStr = dateTimeToYastDate(fakeRecord.startTime);
+      fakeRecord.startTimeStr = localDateTimeToYastDate(fakeRecord.startTime);
       int randomInt = (rng.nextInt(15) +1) * 5;
       Duration randomDur = Duration(minutes: randomInt);
       fakeTime = fakeTime.add(randomDur);
       fakeRecord.endTime = fakeTime;
-      fakeRecord.endTimeStr = dateTimeToYastDate(fakeRecord.endTime);
+      fakeRecord.endTimeStr = localDateTimeToYastDate(fakeRecord.endTime);
       String fakeKey = fakeRecord.id + (count.toString());
       fakeRecord.id = fakeKey;
       fakeRecord.yastObjectFieldsMap[Record.FIELDSMAPID] = fakeKey;
