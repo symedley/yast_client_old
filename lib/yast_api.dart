@@ -138,9 +138,10 @@ class YastApi {
   } // yastRetrieveProjects
 
   /// Outside classes call this to retrieve all the records
+  /// It also puts them in the Firestore database
   Future<Map<String, Record>> yastRetrieveRecords(
       String username, String hashPwd, SavedAppStatus theSavedAppStatus,
-      {startTimeStr: String, endTimeStr: String}) async {
+      {String startTimeStr = null, String endTimeStr = null}) async {
     debugPrint('==========yastRetrieveRcords');
 
     DateTime fromDate;
@@ -168,8 +169,11 @@ class YastApi {
       toDateStr = endTimeStr;
     }
 
-    String optParams =
-        "<" + _timeFromParam + ">$fromDateStr</" + _timeFromParam + ">";
+    String optParams = "<typeId>1</typeId><" +
+        _timeFromParam +
+        ">$fromDateStr</" +
+        _timeFromParam +
+        ">";
     optParams += "<" + _timeToParam + ">$toDateStr</" + _timeToParam + ">";
 
     YastResponse yr = await _yastSendRetrieveRequest(
@@ -183,17 +187,14 @@ class YastApi {
         debugPrint(yr.statusString);
         return null;
       } else {
-//        try {
-        retval = await yastParse.getRecordsFrom(yr.body);
-        // temporary: create some fake records, duplicating stuff from oct 24.
-        await yastParse.putRecordsInDatabase(retval);
-//        Map<String, Record> newFakeRecords =
-//            await (debug.createFutureRecords(retval));
-//        await yastStoreNewRecords(theSavedAppStatus, newFakeRecords);
-//        } catch (e) {
-//          debugPrint("exception retrieving records");
-//          throw (e);
-//        }
+        try {
+          retval = await yastParse.getRecordsFrom(yr.body);
+          // temporary: create some fake records, duplicating stuff from oct 24.
+          await yastParse.putRecordsInDatabase(retval);
+         } catch (e) {
+          debugPrint("exception retrieving records");
+          throw (e);
+        }
       }
       return retval;
     } else {
@@ -203,7 +204,7 @@ class YastApi {
   } // yastRetrieveRecords
 
   /// Outside classes call this to delete a range of time records
-  /// xml format: TODO
+  /// xml format:
   /// request req="data.delete" id="133">
   //    <objects>
   //        <record>
@@ -232,11 +233,8 @@ class YastApi {
     // in case this range of records hasn't been retrieved yet.
     // That way, we can pull the ids from the database.
     Map<String, Record> recs = await yastRetrieveRecords(
-        theSavedStatus.getUsername(),
-        theSavedStatus.hashPasswd,
-        theSavedStatus,
-        startTimeStr: fromDateString,
-        endTimeStr: toDateString);
+        theSavedStatus.getUsername(), theSavedStatus.hashPasswd, theSavedStatus,
+        startTimeStr: fromDateString, endTimeStr: toDateString);
 
     Query query = Firestore.instance
         .collection(YastDb.DbRecordsTableName)
@@ -253,11 +251,15 @@ class YastApi {
       debugPrint(" delete record start time: $docSnap.data");
     });
 
+    ids.sort((a, b) {
+      return a.compareTo(b);
+    });
     debugPrint('ids to delete: $ids');
     YastResponse yr = await _yastSendDeleteRequest(theSavedStatus.getUsername(),
             theSavedStatus.hashPasswd, _data_delete, ids)
         .timeout(Duration(seconds: Constants.HTTP_TIMEOUT));
-    theSavedStatus.message = 'Attempt to delete ${ids.length} records, response ${yr.statusString}';
+    theSavedStatus.message =
+        'Attempt to delete ${ids.length} records, response ${yr.statusString}';
     await yastParse.selectivelyDeleteFromCollection(
         YastDb.DbRecordsTableName, ids.toSet());
     theSavedStatus.currentRecords.removeWhere((String s, Record rec) {

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'saved_app_status.dart';
 import 'login_page.dart';
 import 'yast_api.dart';
+import 'debug_create_future_records.dart' as debug;
 import 'main.dart';
 import 'display_login_status.dart';
 import 'utilities.dart' as utilities;
@@ -12,6 +13,7 @@ import 'constants.dart';
 import 'Model/database_stuff.dart';
 import 'Model/project.dart';
 import 'Model/record.dart';
+import 'yast_response.dart';
 
 class HomePageRoute extends StatefulWidget {
   static String tag = "home-page-route";
@@ -109,6 +111,32 @@ class _MyHomePageState extends State<HomePageRoute> {
     } else {
       // get the records from the dtabaae
     }
+    //
+    // DEBUG: create future fake records
+    DateTime startReferenceDay = DateTime.parse(Constants.referenceDay);
+    String startReferenceDayStr = utilities.localDateTimeToYastDate(startReferenceDay);
+//  DateTime endReferenceDay = DateTime.parse('2018-10-24 23:59:00');
+    DateTime endReferenceDay = DateTime(startReferenceDay.year,
+        startReferenceDay.month, startReferenceDay.day, 23, 59, 0);
+    String endReferenceDayStr = utilities.localDateTimeToYastDate(endReferenceDay);
+    // Map referenceDayRecords =
+    widget.theSavedStatus.counterApiCallsStarted++;
+    Map<String, Record> referenceRecs = await api.yastRetrieveRecords(
+        widget.theSavedStatus.getUsername(),
+        widget.theSavedStatus.hashPasswd,
+        widget.theSavedStatus,
+        startTimeStr: startReferenceDayStr,
+        endTimeStr: endReferenceDayStr);
+    widget.theSavedStatus.counterApiCallsCompleted++;
+    Map<String, Record> newFakeRecords = await debug.createFutureRecords(referenceRecs);
+    // create the fake records should also store them in the database.
+//    widget.theSavedStatus.counterApiCallsStarted++;
+//    await api.yastStoreNewRecords(widget.theSavedStatus, newFakeRecords);
+//    widget.theSavedStatus.counterApiCallsCompleted++;
+    widget.theSavedStatus.currentRecords.addAll(newFakeRecords);
+    YastResponse yr = await api.yastStoreNewRecords(
+        widget.theSavedStatus, newFakeRecords);
+
     widget.theSavedStatus.counterApiCallsCompleted++;
 
     // TODO if the user is now looking at another tab, such as Timeline,
