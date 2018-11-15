@@ -112,10 +112,12 @@ class Record extends YastObject {
       });
       startTimeStr = variables[0];
       endTimeStr = variables[1];
-      startTime = DateTime.fromMillisecondsSinceEpoch(
-          int.parse(startTimeStr) * utils.dateConversionFactor);
-      endTime = DateTime.fromMillisecondsSinceEpoch(
-          int.parse(endTimeStr) * utils.dateConversionFactor);
+//      startTime = DateTime.fromMillisecondsSinceEpoch(
+//          int.parse(startTimeStr) * utils.dateConversionFactor, isUtc:  true);
+      startTime = utils.yastTimetoLocalDateTime(startTimeStr);
+//      endTime = DateTime.fromMillisecondsSinceEpoch(
+//          int.parse(endTimeStr) * utils.dateConversionFactor);
+      endTime = utils.yastTimetoLocalDateTime(endTimeStr);
       comment = variables[2];
       isRunning = variables[3];
 //       hourlyCost = variables[4];
@@ -256,10 +258,8 @@ xml.XmlNode toXmlForDeletion() {
       this.endTimeStr = this.yastObjectFieldsMap[Record.FIELDSMAPENDTIME];
       this.comment = this.yastObjectFieldsMap[Record.FIELDSMAPCOMMENT];
       this.isRunning = this.yastObjectFieldsMap[Record.FIELDSMAPISRUNNING];
-      startTime = DateTime.fromMillisecondsSinceEpoch(
-          int.parse(startTimeStr) * utils.dateConversionFactor);
-      endTime = DateTime.fromMillisecondsSinceEpoch(
-          int.parse(endTimeStr) * utils.dateConversionFactor);
+      startTime = utils.yastTimetoLocalDateTime(startTimeStr);
+      endTime = utils.yastTimetoLocalDateTime(endTimeStr);
       this.projectId = this.yastObjectFieldsMap[FIELDSMAPPROJECTID];
     } catch (e) {
       debugPrint(e);
