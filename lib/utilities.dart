@@ -52,6 +52,11 @@ String localDateTimeToYastDate(DateTime inputDate) {
   return retval;
 }
 
+  int dateTimetoSecondsSinceEpoch(DateTime date) {
+     return date.millisecondsSinceEpoch ~/ dateConversionFactor;
+  }
+
+
 /// Construct a color from a hex code string, of the format #RRGGBB.
 ///  optional transparency, defaults to 0x88000000
 Color hexToColor(String code, {int transparency = 0xff0000000}) {

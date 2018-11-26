@@ -54,9 +54,6 @@ class SavedAppStatus {
     _savePreferences(newUsername);
   }
 
-  /// Keep track of which day the user is currently looking at
-  DateTime currentDate;
-
   /// Status (logged in, error, whatever)
   /// and the message that goes with it.
   StatusOfApi sttOfApi = StatusOfApi.ApiLoginNeeded;
@@ -171,8 +168,13 @@ class SavedAppStatus {
     }
   }
 
+  /// create or update the duration values in these maps
+  /// in the saved app status:
+  ///     // projectIdToDuration
+  //    // projectNameToDuration
+  //    // projectIdToDurationProject
   void addToProjectDuration(
-      {@required project: Project, Duration duration, int secsFromEpoch}) {
+      {@required Project project , Duration duration, int secsFromEpoch}) {
     if ((duration == null)) {
       if ((secsFromEpoch == null) || (secsFromEpoch <= 0)) {
         return; // do nothing
@@ -182,31 +184,34 @@ class SavedAppStatus {
         return; // do nothing
       }
     }
+
     if (project.name != null) {
       if (projectNameToDuration[project.name] != null) {
         projectNameToDuration[project.name] += duration;
+        projectIdToDuration[project.id] += duration;
         projectIdToDurationProject[project.id].duration += duration;
       } else {
         // encountered a new project type?
         // should it be added in the project duration map?
-      }
-      if (project.id != null) {
-        if (projectNameToDuration[project.id] != null) {
-          projectNameToDuration[project.id] += duration;
-          projectIdToDurationProject[project.id].duration += duration;
-
-        } else {
-          // encountered a new project type?
-          // should it be added in the project duration map?
-        }
+        projectNameToDuration[project.name] = duration;
+        projectIdToDuration[project.id] = duration;
+        projectIdToDurationProject[project.id]
+          = new DurationProject(duration, project);
       }
     }
   }
 
+  /// Reset the info about project duration for the currently viewed day
   void resetProjectDurationMap() {
-    projectNameToDuration = new Map();
-    projectIdToDuration = new Map();
-    projectIdToDurationProject = new Map();
+    projectNameToDuration.forEach((k,v) {
+      v = new Duration(minutes: 0);
+    });
+    projectIdToDuration.forEach((k,v) {
+      v = new Duration(minutes: 0);
+    });
+    projectIdToDurationProject.forEach((k,v) {
+      v = new DurationProject(Duration(minutes: 0), v.project); // TODO check that this isn't messing up the project objects
+    });
   }
 
   List<MapEntry<String, DurationProject>> sortedProjectDurations() {

@@ -25,7 +25,7 @@ Future<Map<String, String>> getFoldersFrom(xml.XmlDocument xmlBody) async {
   List<xml.XmlElement> xmlObjs = await _getXmlObjectsFrom(xmlBody, folderStr);
   Map<String, String> mapFolderIdName = new Map();
   var retval =
-      await _getYastObjectsFrom(mapFolderIdName, TypeXmlObject.Folder, xmlObjs);
+      await _getYastObjectsFromAndStoreInDb(mapFolderIdName, TypeXmlObject.Folder, xmlObjs);
   debugPrint('-------------**********END  _getFoldersFrom');
   return retval;
 }
@@ -48,8 +48,7 @@ List<xml.XmlElement> _getXmlObjectsFrom(
 Future<Map<String, Project>> getProjectsFrom(xml.XmlDocument xmlBody) async {
   List<xml.XmlElement> xmlObjs = _getXmlObjectsFrom(xmlBody, projectStr);
   Map<String, Project> mapProjects = new Map();
-  return await _getYastObjectsFrom(
-      mapProjects, TypeXmlObject.Project, xmlObjs);
+  return await _getYastObjectsFromAndStoreInDb(mapProjects, TypeXmlObject.Project, xmlObjs);
 }
 
 ///getRecordsFrom
@@ -91,7 +90,8 @@ Future<Map<String, Record>> getRecordsFrom(xml.XmlDocument xmlBody) async {
   return recs;
 } //_getRecordsFrom
 
-Future<void> putRecordsInDatabase(Map<String, Record> recs) async {
+Future<void> putRecordsInDatabase(Map<String, Record> recs,
+    {bool selectivelyDelete = false}) async {
   // take the things in the variables block
   // that were pulled out in making the Record
   // object and put into the fieldsMap of the
@@ -104,8 +104,10 @@ Future<void> putRecordsInDatabase(Map<String, Record> recs) async {
 
   int counter = 0;
   Set<String> oldKeys;
-  if (recs.isNotEmpty) oldKeys = await _getKeysOfCollection(YastDb.DbRecordsTableName);
-  else oldKeys = new Set();
+  if (recs.isNotEmpty)
+    oldKeys = await _getKeysOfCollection(YastDb.DbRecordsTableName);
+  else
+    oldKeys = new Set();
 
   WriteBatch batch = Firestore.instance.batch();
   recs.values.forEach((rec) async {
@@ -130,13 +132,11 @@ Future<void> putRecordsInDatabase(Map<String, Record> recs) async {
   debugPrint("============== list of record keys to delete: $oldKeys");
 
   // the new list of records just gotten from yast.com
-  await selectivelyDeleteFromCollection(YastDb.DbRecordsTableName, oldKeys);
+  if (selectivelyDelete)
+    await selectivelyDeleteFromCollection(YastDb.DbRecordsTableName, oldKeys);
   // TODO if saving is done in batches, when do i selectivelhy delete?
 
-  await batch
-      .commit()
-      .timeout(Duration(seconds: Constants.HTTP_TIMEOUT))
-      ;
+  await batch.commit().timeout(Duration(seconds: Constants.HTTP_TIMEOUT));
 } // _putRecordsInDatabase
 
 /// a List of the keys of the named collection in Firebase Cloud Firestore
@@ -149,32 +149,45 @@ Future<Set<String>> _getKeysOfCollection(String collectionName) async {
   Set<String> retval = new Set();
   qss.documents.forEach((docSnap) {
     docSnap.data.keys;
-    int startchar = 1+ docSnap.reference.path.indexOf('/', 0);
-    String id = docSnap.reference.path.substring(startchar,docSnap.reference.path.length);
-    retval.add( id );
+    int startchar = 1 + docSnap.reference.path.indexOf('/', 0);
+    String id = docSnap.reference.path
+        .substring(startchar, docSnap.reference.path.length);
+    retval.add(id);
   });
   return retval;
 } //_getKeysOfACollection
 
+Future<void> selectivelyDeleteRecordsWithinDateRange(Set<Record> recsToExamine,
+    String startTimeStrUtc, String endTimeStrUtc) async {
+  Set<String> keysToDelete = new Set();
+  recsToExamine.forEach((Record rec) {
+    if ((startTimeStrUtc.compareTo(rec.startTimeStr) > 0) &&
+        (endTimeStrUtc.compareTo(rec.startTimeStr) < 0)) {
+      keysToDelete.add(rec.id);
+    }
+  });
+  await selectivelyDeleteFromCollection(
+      YastDb.DbRecordsTableName, keysToDelete);
+}
+
 /// Delete only records matching these keys from the named Firestore collection
-Future<void> selectivelyDeleteFromCollection(String collectionName, Set<String> theTargets) async {
-  int counter=0;
+Future<void> selectivelyDeleteFromCollection(
+    String collectionName, Set<String> theTargets) async {
+  int counter = 0;
   WriteBatch batch = Firestore.instance.batch();
   theTargets.forEach((String key) {
-      if ((counter % YastDb.BATCHLIMIT) == 0) {
-        batch.commit();
-        batch = Firestore.instance.batch();
-        debugPrint("====mid way DELETE records count: $counter");
-      }
-      DocumentReference dr =
-      Firestore.instance.document('${YastDb.DbRecordsTableName}/$key');
-      batch.delete(dr);
+    if (((counter % YastDb.BATCHLIMIT) == 0) && (counter > 0)) {
+      batch.commit();
+      batch = Firestore.instance.batch();
+      debugPrint("====mid way DELETE records count: $counter");
+    }
+    DocumentReference dr =
+        Firestore.instance.document('${YastDb.DbRecordsTableName}/$key');
+    batch.delete(dr);
 
-      counter++;
-    });
-  await batch
-      .commit()
-      .timeout(Duration(seconds: Constants.HTTP_TIMEOUT));
+    counter++;
+  });
+  await batch.commit().timeout(Duration(seconds: Constants.HTTP_TIMEOUT));
 }
 
 /// Brute force delete all documents in a collection of the given name.
@@ -214,7 +227,7 @@ Future<void> _deleteAllDocsInCollection(String collectionName) async {
 /// getYastObjectsFrom - most of the logic in getYastProjects and getYastFoldesr
 /// is the same.
 /// returns the Map that was passed in.
-Future<Map<String, dynamic>> _getYastObjectsFrom(
+Future<Map<String, dynamic>> _getYastObjectsFromAndStoreInDb(
     Map<String, dynamic> mapYastObjects,
     TypeXmlObject whichOne,
     //   String tableName,
@@ -226,7 +239,7 @@ Future<Map<String, dynamic>> _getYastObjectsFrom(
       ? YastDb.DbProjectsTableName
       : YastDb.DbFoldersTableName;
 
-  var oldMap = new List.from(mapYastObjects.keys);
+  Set<String> oldKeys = new Set.from(mapYastObjects.keys);
 
 //  List<YastObject> objects = new List<YastObject>();
 
@@ -240,21 +253,24 @@ Future<Map<String, dynamic>> _getYastObjectsFrom(
     }
 //    mapIdToYastObjects[obj.id] = obj.name;
     mapYastObjects[obj.id] = obj;
-    oldMap.remove(obj.id);
+    oldKeys.remove(obj.id);
   });
   debugPrint(mapYastObjects.toString());
 
   // remove old
   // TODO change to a batch operation
-  oldMap.forEach((mapObj){
-    DocumentReference dr =
-        Firestore.instance.document('$tableName/${mapObj.key}');
-    dr.delete();
-  });
+//  oldMap.forEach((mapObj) {
+//    DocumentReference dr =
+//        Firestore.instance.document('$tableName/${mapObj.key}');
+//    dr.delete();
+//  });
+//  Set<String> targets = oldMap.map((obj) {
+//    return obj.id;
+//  });
+  selectivelyDeleteFromCollection(tableName, oldKeys );
 
   WriteBatch batch = Firestore.instance.batch();
   mapYastObjects.values.forEach((obj) async {
-
     DocumentReference dr = Firestore.instance.document('$tableName/${obj.id}');
     batch.setData(dr, {
       YastObject.FIELDSMAPID: obj.id,

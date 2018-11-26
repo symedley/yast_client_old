@@ -83,7 +83,7 @@ class Record extends YastObject {
 
   static const String __object = "record";
   static const String _variables = "variables";
-  static const String _typeId = "typeId";
+//  static const String _typeId = "typeId";
 
   //  Record fields. See also those inherited.
   DateTime startTime; // [seconds since 1st of January 1970]
@@ -177,64 +177,6 @@ class Record extends YastObject {
     return builder.build();
   } // toXml
 
-  /// deletions are done in a block saying what
-  /// the thing is (<record>) and holding just the id#
-  /// And the list of those blocks is in an <objects> block
-  //    <objects>
-  //        <record>
-  //            <id>8282</id>
-  //        </record>
-  //        <group>
-  //            <id>132</id>
-  //        </group>
-  //    <objects>
-  //</response>
-xml.XmlNode toXmlForDeletion() {
-    var builder = new xml.XmlBuilder();
-    builder.processing('xml', 'version="1.0"');
-    builder.element(YastParse.recordStr, nest: () {
-      builder.element(YastParse.recordStr, nest: () {
-        builder.element('id', nest: () {
-          builder.text(this.id);
-        });
-      });
-    });
-    return builder.build();
-  } // toXmlForDeletion
-
-  /// return a builder in process so that the document isn't finalized.
-  xml.XmlBuilder toXmlBuilder() {
-    var builder = new xml.XmlBuilder();
-    builder.processing('xml', 'version="1.0"');
-    builder.element(YastParse.recordStr, nest: () {
-      builder.element('typeId', nest: () {
-        builder.text(this.typeId);
-      });
-      builder.element('project', nest: () {
-        builder.text(this.projectId);
-      });
-      builder.element('variables', nest: () {
-        builder.element('v', nest: () {
-          builder.text(this.startTimeStr);
-        });
-        builder.element('v', nest: () {
-          builder.text(this.endTimeStr);
-        });
-        builder.element('v', nest: () {
-          builder.text(this.comment);
-        });
-        builder.element('v', nest: () {
-          builder.text(this.isRunning);
-        });
-      });
-      builder.element('flags', nest: () {
-        builder.text(this.flags);
-      });
-    });
-//    var retval = super.toXml() ;
-    return builder;
-  } // toXml
-
   copyVariablesIntoFieldmap() {
     // Copy the YastObject starttime, endttime, comment and isrunning
     // into the fieldmap with the other variables to make it easier to
@@ -282,6 +224,10 @@ xml.XmlNode toXmlForDeletion() {
       debugPrint(e);
       throw (e);
     }
+  }
+
+  String toString() {
+    return 'id:$id start:$startTime';
   }
 
   Duration duration() {

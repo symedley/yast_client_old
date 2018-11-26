@@ -11,9 +11,7 @@ import 'constants.dart';
 // These must go into the database and be entered using the yast api
 Future<Map<String, Record>> createFutureRecords(
     Map<String, Record> records) async {
-//  DateTime startReferenceDay = DateTime.parse('2018-10-24 00:00:00');
   DateTime startReferenceDay = DateTime.parse(Constants.referenceDay);
-//  DateTime endReferenceDay = DateTime.parse('2018-10-24 23:59:00');
   DateTime endReferenceDay = DateTime(
       startReferenceDay.year,
       startReferenceDay.month,
@@ -28,22 +26,18 @@ Future<Map<String, Record>> createFutureRecords(
         (start.compareTo(endReferenceDay) < 0)) {
       recsToCopy.add(value);
     }
-
-    /// vvv this will never work because future records don't get retrieved
-//    if (value.startTime.compareTo( fakeDay) > 0){
-//      fakeDay = value.startTime;
-//    }
   });
   int count = 0;
   Map<String, Record> newFakeRecords = new Map();
-  DateTime fakeDay = DateTime.parse(Constants.firstFakeRecordsDay);
-  fakeDay = DateTime(fakeDay.year, fakeDay.month, fakeDay.day);
+  DateTime fakeDay = DateTime.parse(Constants.firstFakeRecordsDay);//local time zone
+  // fakeDay is in local time
+  fakeDay = DateTime(fakeDay.year, fakeDay.month, fakeDay.day );
   DateTime fakeTime;
   var rng = new Random();
   int recordCount = 0;
   while (count < 1) {
     //does this modify fakeDAte?
-    fakeTime = fakeDay.add(new Duration(hours: 7));
+    fakeTime = fakeDay.add(new Duration(hours: Constants.fakeDayMorningStartTime));
 
     if (((recordCount % YastDb.FAKERECORDSBATCHLIMIT)==0) && (recordCount != 0)) {
       await putRecordsInDatabase(newFakeRecords);
@@ -54,8 +48,9 @@ Future<Map<String, Record>> createFutureRecords(
       Record fakeRecord = Record.clone(rec);
       fakeRecord.startTime = fakeTime;
       fakeRecord.startTimeStr = localDateTimeToYastDate(fakeRecord.startTime);
-      int randomInt = (rng.nextInt(15) + 1) * 5;
+      int randomInt = (rng.nextInt(6) -3 ) * 5;
       Duration randomDur = Duration(minutes: randomInt);
+      fakeTime = fakeTime.add(rec.duration());
       fakeTime = fakeTime.add(randomDur);
       fakeRecord.endTime = fakeTime;
       fakeRecord.endTimeStr = localDateTimeToYastDate(fakeRecord.endTime);
@@ -83,7 +78,7 @@ Future<Map<String, Record>> createFutureRecords(
   }
   Map<String, Record> retval = Map.from(newFakeRecords);
   if (true) {
-    await putRecordsInDatabase(newFakeRecords);
+    await putRecordsInDatabase(newFakeRecords, selectivelyDelete: false);
     newFakeRecords.clear();
   }
   return retval;

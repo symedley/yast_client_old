@@ -61,7 +61,9 @@ class _MyHomePageState extends State<HomePageRoute> {
 
     await _retrieveAllProjects().then((_) {
       _retrieveAllFolders().then((_) {
-        _retrieveRecords();
+        _retrieveRecords().then((_) {
+          _createFakes();
+        });
       });
     });
     if (this.mounted == true) setState(() {});
@@ -105,12 +107,25 @@ class _MyHomePageState extends State<HomePageRoute> {
     Map<String, Record> recs = await api.yastRetrieveRecords(
         widget.theSavedStatus.getUsername(),
         widget.theSavedStatus.hashPasswd,
-        widget.theSavedStatus);
+        widget.theSavedStatus,
+        selectivelyDelete: false);
     if (recs != null) {
       widget.theSavedStatus.currentRecords = recs;
     } else {
       // get the records from the dtabaae
     }
+
+    widget.theSavedStatus.counterApiCallsCompleted++;
+
+    // TODO if the user is now looking at another tab, such as Timeline,
+    // how to trigger that to update?
+  }
+
+  /// Create fake records for purposes of creating a lot of days worth
+  /// of data for debugging purposes. See Constants for reference and
+  /// target dates.
+  Future<void> _createFakes() async {
+    YastApi api = YastApi.getApi();
     //
     // DEBUG: create future fake records
     DateTime startReferenceDay = DateTime.parse(Constants.referenceDay);
@@ -126,7 +141,9 @@ class _MyHomePageState extends State<HomePageRoute> {
         widget.theSavedStatus.hashPasswd,
         widget.theSavedStatus,
         startTimeStr: startReferenceDayStr,
-        endTimeStr: endReferenceDayStr);
+        endTimeStr: endReferenceDayStr,
+        selectivelyDelete: false);
+    debugPrint('referenceRecs: $referenceRecs');
     widget.theSavedStatus.counterApiCallsCompleted++;
     Map<String, Record> newFakeRecords = await debug.createFutureRecords(referenceRecs);
     // create the fake records should also store them in the database.
@@ -136,11 +153,7 @@ class _MyHomePageState extends State<HomePageRoute> {
     widget.theSavedStatus.currentRecords.addAll(newFakeRecords);
     YastResponse yr = await api.yastStoreNewRecords(
         widget.theSavedStatus, newFakeRecords);
-
-    widget.theSavedStatus.counterApiCallsCompleted++;
-
-    // TODO if the user is now looking at another tab, such as Timeline,
-    // how to trigger that to update?
+    debugPrint(yr.toString());
   }
 
   void _resetButtonPressed() {
@@ -168,6 +181,8 @@ class _MyHomePageState extends State<HomePageRoute> {
     debugPrint('==========_deleteDatesButtonPressed');
     YastApi api = YastApi.getApi();
     widget.theSavedStatus.counterApiCallsStarted++;
+    // Possible refactor: this could use the fields  _beginDaySeconds and _endDaySeconds
+    // to save processing in yastDeleteRecords.
     await api.yastDeleteRecords(widget.theSavedStatus, _fromDateDelete, _toDateDelete);
 //    widget.theSavedStatus.projectIdToName = projectMap;
     // TODO remove those from the local cache of records (map)
@@ -208,7 +223,10 @@ class _MyHomePageState extends State<HomePageRoute> {
     }
   }
 
+  /// The time frame this view is currently working on
+  /// in seconds since epoch.
   int _beginDaySeconds, _endDaySeconds;
+
   BuildContext _scaffoldContext;
 
   DateTime _fromDateDelete, _toDateDelete;
@@ -222,8 +240,7 @@ class _MyHomePageState extends State<HomePageRoute> {
       setState(() {
         _fromDateDelete = date;
         _fromDateDeleteString = DateFormat.Md().format(_fromDateDelete);
-        _beginDaySeconds = _fromDateDelete.millisecondsSinceEpoch ~/
-            utilities.dateConversionFactor;
+        _beginDaySeconds = utilities.dateTimetoSecondsSinceEpoch(_fromDateDelete);
       });
       return _fromDateDelete;
     }
@@ -237,8 +254,7 @@ class _MyHomePageState extends State<HomePageRoute> {
       setState(() {
         _toDateDelete = date;
         _toDateDeleteString = DateFormat.Md().format(_toDateDelete);
-        _beginDaySeconds = date.millisecondsSinceEpoch ~/
-            utilities.dateConversionFactor;
+        _beginDaySeconds = utilities.dateTimetoSecondsSinceEpoch(date);
       });
       return _toDateDelete;
     }

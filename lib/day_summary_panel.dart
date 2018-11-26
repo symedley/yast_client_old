@@ -50,11 +50,9 @@ class _DaySummaryPanelState extends State {
       _fromDate = new DateTime(_fromDate.year, _fromDate.month, _fromDate.day);
       theSavedStatus.setPreferredDate(_fromDate);
     }
-    _beginDaySeconds =
-        _fromDate.millisecondsSinceEpoch ~/ utilities.dateConversionFactor;
-    DateTime tmp = _fromDate.add(Duration(hours: 24));
-    _endDaySeconds =
-        tmp.millisecondsSinceEpoch ~/ utilities.dateConversionFactor;
+    _beginDaySeconds = utilities.localDateTimeToYastDate(_fromDate);
+    DateTime tmpDate = _fromDate.add(Duration(hours: 24));
+    _endDaySeconds = utilities.localDateTimeToYastDate(tmpDate);
   }
 
   final SavedAppStatus theSavedStatus;
@@ -83,11 +81,9 @@ class _DaySummaryPanelState extends State {
         lastDate: new DateTime(2018, 12, 31));
     _fromDate = (tmpDate == null) ? _fromDate : tmpDate;
     theSavedStatus.setPreferredDate(_fromDate);
-    _beginDaySeconds =
-        _fromDate.millisecondsSinceEpoch ~/ utilities.dateConversionFactor;
+    _beginDaySeconds = utilities.localDateTimeToYastDate(_fromDate);
     DateTime tmp = _fromDate.add(Duration(hours: 24));
-    _endDaySeconds =
-        tmp.millisecondsSinceEpoch ~/ utilities.dateConversionFactor;
+    _endDaySeconds = utilities.localDateTimeToYastDate(tmp);
     setState(() {
 //       this is not triggering an update TODO
     });
@@ -95,7 +91,7 @@ class _DaySummaryPanelState extends State {
 
   BuildContext _scaffoldContext;
   DateTime _fromDate;
-  int _beginDaySeconds, _endDaySeconds;
+  String _beginDaySeconds, _endDaySeconds;
 
   @override
   Widget build(BuildContext context) {
@@ -121,7 +117,7 @@ class _DaySummaryPanelState extends State {
                 stream: Firestore.instance
                     .collection(YastDb.DbRecordsTableName)
                     .where("startTime",
-                        isGreaterThanOrEqualTo: _beginDaySeconds.toString())
+                        isGreaterThanOrEqualTo: _beginDaySeconds)
                     .snapshots(),
                 builder: (context, snapshot) {
                   // Loading...
@@ -165,14 +161,16 @@ class _DaySummaryPanelState extends State {
                     //                        ' --- $i ---> $tmpFromdate , ${recordFromDb.startTime} $toDate');
 //                    i++;
                     // for now, use only start time. Ignore end time.
-                    if ((_beginDaySeconds <
-                            (int.parse(recordFromDb.startTimeStr))) &&
-                        (_endDaySeconds >
-                            int.parse(recordFromDb.startTimeStr))) {
+                    if ((_beginDaySeconds.compareTo(
+                            (recordFromDb.startTimeStr)) < 0) &&
+                        (_endDaySeconds.compareTo(
+                            recordFromDb.startTimeStr)) > 0 ) {
                       theSavedStatus.addToProjectDuration(
                           project:
                               theSavedStatus.projects[recordFromDb.projectId],
                           duration: recordFromDb.duration());
+                    }else {
+                      debugPrint('Record ${recordFromDb.toString()} was NOT in range to be displayed. why?');
                     }
                   });
                   //Sort the duration projects

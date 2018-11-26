@@ -86,6 +86,7 @@ class YastApi {
     Map<String, Project> mapIdToProjects;
     await _yastSendRetrieveRequest(theSavedStatus.getUsername(),
             theSavedStatus.hashPasswd, _data_getProjects)
+        .timeout(Duration(seconds: Constants.HTTP_TIMEOUT))
         .then((yr) async {
       if (yr != null) {
         if (yr.status != YastResponse.yastSuccess) {
@@ -97,12 +98,12 @@ class YastApi {
             mapIdToProjects = await yastParse.getProjectsFrom(yr.body);
           } catch (e) {
             debugPrint("exception retrieving projects");
-            debugPrint(e);
+            debugPrint(e.toString());
             return null;
           }
         }
       } else {
-        debugPrint("yastResponse is null $yr");
+        debugPrint("yastResponse is null when retrieving projects $yr");
         return null;
       }
     });
@@ -126,6 +127,7 @@ class YastApi {
             mapIdToFolders = await yastParse.getFoldersFrom(yr.body);
           } catch (e) {
             debugPrint("exception retrieving projects");
+            debugPrint(e.toString());
             return null;
           }
         }
@@ -141,17 +143,20 @@ class YastApi {
   /// It also puts them in the Firestore database
   Future<Map<String, Record>> yastRetrieveRecords(
       String username, String hashPwd, SavedAppStatus theSavedAppStatus,
-      {String startTimeStr = null, String endTimeStr = null}) async {
+      {String startTimeStr = null, String endTimeStr = null,
+      bool selectivelyDelete}) async {
     debugPrint('==========yastRetrieveRcords');
 
     DateTime fromDate;
     String fromDateStr;
     if (startTimeStr == null) {
-      fromDate = theSavedAppStatus.currentDate;
+      fromDate = theSavedAppStatus.getPreferredDate();
       if (fromDate == null) {
         DateTime now = new DateTime.now();
         fromDate = new DateTime(now.year, now.month, now.day)
-            .subtract(Duration(days: 1));
+            .subtract(Duration(days: 5));
+        fromDateStr = localDateTimeToYastDate(fromDate);
+      } else {
         fromDateStr = localDateTimeToYastDate(fromDate);
       }
     } else {
@@ -163,7 +168,7 @@ class YastApi {
     if (endTimeStr == null) {
       DateTime toTime;
       toTime = new DateTime(fromDate.year, fromDate.month, fromDate.day)
-          .add(Duration(days: 5));
+          .add(Duration(days: 10));
       toDateStr = localDateTimeToYastDate(toTime);
     } else {
       toDateStr = endTimeStr;
@@ -189,8 +194,7 @@ class YastApi {
       } else {
         try {
           retval = await yastParse.getRecordsFrom(yr.body);
-          // temporary: create some fake records, duplicating stuff from oct 24.
-          await yastParse.putRecordsInDatabase(retval);
+          await yastParse.putRecordsInDatabase(retval, selectivelyDelete: selectivelyDelete);
          } catch (e) {
           debugPrint("exception retrieving records");
           throw (e);
@@ -234,7 +238,8 @@ class YastApi {
     // That way, we can pull the ids from the database.
     Map<String, Record> recs = await yastRetrieveRecords(
         theSavedStatus.getUsername(), theSavedStatus.hashPasswd, theSavedStatus,
-        startTimeStr: fromDateString, endTimeStr: toDateString);
+        startTimeStr: fromDateString, endTimeStr: toDateString,
+         selectivelyDelete: false);
 
     Query query = Firestore.instance
         .collection(YastDb.DbRecordsTableName)
@@ -295,6 +300,7 @@ class YastApi {
           .timeout(Duration(seconds: Constants.HTTP_TIMEOUT));
 //      debugPrint(yr.toString());
     });
+    debugPrint(yr.toString());
     return yr;
   }
 
@@ -303,17 +309,8 @@ class YastApi {
   Future<YastResponse> _yastSendStoreRequest(
       String username, String hashPwd, String httpRequestString,
       [String optionalParams]) async {
-    if ((username == null) || (username.runtimeType != String)) {
-      debugPrint("Attempt to retrieve something when there is no username!");
-      debugPrint("username = $username");
-      return null;
-    }
-    if ((hashPwd == null) || (hashPwd.runtimeType != String)) {
-      debugPrint(
-          "Attempt to retrieve something when there is no hash password!");
-      debugPrint("hashPwd = $hashPwd");
-      return null;
-    }
+    if (_basicCheck(username, hashPwd) == false) return null;
+
     optionalParams ??= "";
     String xmlToSend = '<request req="' +
         httpRequestString +
@@ -324,7 +321,7 @@ class YastApi {
         optionalParams +
         _close_request_string;
     sendCounter++;
-    return await yasthttp.sendToYastApi(xmlToSend);
+    return  await yasthttp.sendToYastApi(xmlToSend);
   }
 
   /// Form a retrieve request and post it
@@ -332,18 +329,6 @@ class YastApi {
       String username, String hashPwd, String httpRequestString,
       [String optionalParams]) async {
     if (_basicCheck(username, hashPwd) == false) return null;
-
-//    if ((username == null) || (username.runtimeType != String)) {
-//      debugPrint("Attempt to retrieve something when there is no username!");
-//      debugPrint("username = $username");
-//      return null;
-//    }
-//    if ((hashPwd == null) || (hashPwd.runtimeType != String)) {
-//      debugPrint(
-//          "Attempt to retrieve something when there is no hash password!");
-//      debugPrint("hashPwd = $hashPwd");
-//      return null;
-//    }
     optionalParams ??= "";
     String xmlToSend = '<request req="' +
         httpRequestString +
