@@ -126,7 +126,7 @@ class YastApi {
           try {
             mapIdToFolders = await yastParse.getFoldersFrom(yr.body);
           } catch (e) {
-            debugPrint("exception retrieving projects");
+            debugPrint("exception retrieving folders");
             debugPrint(e.toString());
             return null;
           }
@@ -143,7 +143,8 @@ class YastApi {
   /// It also puts them in the Firestore database
   Future<Map<String, Record>> yastRetrieveRecords(
       String username, String hashPwd, SavedAppStatus theSavedAppStatus,
-      {String startTimeStr = null, String endTimeStr = null,
+      {String startTimeStr = null,
+      String endTimeStr = null,
       bool selectivelyDelete}) async {
     debugPrint('==========yastRetrieveRcords');
 
@@ -153,12 +154,12 @@ class YastApi {
       fromDate = theSavedAppStatus.getPreferredDate();
       if (fromDate == null) {
         DateTime now = new DateTime.now();
-        fromDate = new DateTime(now.year, now.month, now.day)
-            .subtract(Duration(days: 5));
-        fromDateStr = localDateTimeToYastDate(fromDate);
-      } else {
-        fromDateStr = localDateTimeToYastDate(fromDate);
+        fromDate = now;
       }
+
+      fromDate = new DateTime(fromDate.year, fromDate.month, fromDate.day)
+          .subtract(Duration(days: 10));
+      fromDateStr = localDateTimeToYastDate(fromDate);
     } else {
       fromDateStr = startTimeStr;
       fromDate = yastTimetoLocalDateTime(startTimeStr);
@@ -168,7 +169,7 @@ class YastApi {
     if (endTimeStr == null) {
       DateTime toTime;
       toTime = new DateTime(fromDate.year, fromDate.month, fromDate.day)
-          .add(Duration(days: 10));
+          .add(Duration(days: 15));
       toDateStr = localDateTimeToYastDate(toTime);
     } else {
       toDateStr = endTimeStr;
@@ -194,8 +195,9 @@ class YastApi {
       } else {
         try {
           retval = await yastParse.getRecordsFrom(yr.body);
-          await yastParse.putRecordsInDatabase(retval, selectivelyDelete: selectivelyDelete);
-         } catch (e) {
+          await yastParse.putRecordsInDatabase(retval,
+              selectivelyDelete: selectivelyDelete);
+        } catch (e) {
           debugPrint("exception retrieving records");
           throw (e);
         }
@@ -238,8 +240,9 @@ class YastApi {
     // That way, we can pull the ids from the database.
     Map<String, Record> recs = await yastRetrieveRecords(
         theSavedStatus.getUsername(), theSavedStatus.hashPasswd, theSavedStatus,
-        startTimeStr: fromDateString, endTimeStr: toDateString,
-         selectivelyDelete: false);
+        startTimeStr: fromDateString,
+        endTimeStr: toDateString,
+        selectivelyDelete: false);
 
     Query query = Firestore.instance
         .collection(YastDb.DbRecordsTableName)
@@ -321,7 +324,7 @@ class YastApi {
         optionalParams +
         _close_request_string;
     sendCounter++;
-    return  await yasthttp.sendToYastApi(xmlToSend);
+    return await yasthttp.sendToYastApi(xmlToSend);
   }
 
   /// Form a retrieve request and post it

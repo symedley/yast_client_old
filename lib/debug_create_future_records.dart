@@ -74,7 +74,7 @@ Future<Map<String, Record>> createFutureRecords(
       newFakeRecords[fakeKey] = fakeRecord;
     });
     fakeDay = fakeDay.add(new Duration(days: 1));
-    count++;
+    count++; // TODO should this be inside the above loop of records?
   }
   Map<String, Record> retval = Map.from(newFakeRecords);
   if (true) {
