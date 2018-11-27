@@ -84,3 +84,18 @@ void showSnackbar(BuildContext scaffoldContext, String theMesg) {
   );
   Scaffold.of(scaffoldContext).showSnackBar(snackBar);
 }
+
+bool basicCheck(String username, String hashPwd) {
+  if ((username == null) || (username.runtimeType != String)) {
+    debugPrint("Attempt to retrieve something when there is no username!");
+    debugPrint("username = $username");
+    return false;
+  }
+  if ((hashPwd == null) || (hashPwd.runtimeType != String)) {
+    debugPrint(
+        "Attempt to retrieve something when there is no hash password!");
+    debugPrint("hashPwd = $hashPwd");
+    return false;
+  }
+  return true;
+}

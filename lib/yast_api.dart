@@ -83,6 +83,9 @@ class YastApi {
   /// Outside classes call this to retrieve all the project categories
   Future<Map<String, dynamic>> yastRetrieveProjects(
       SavedAppStatus theSavedStatus) async {
+    if (basicCheck(theSavedStatus.getUsername(), theSavedStatus.hashPasswd) ==
+        false) return null;
+
     Map<String, Project> mapIdToProjects;
     await _yastSendRetrieveRequest(theSavedStatus.getUsername(),
             theSavedStatus.hashPasswd, _data_getProjects)
@@ -114,6 +117,11 @@ class YastApi {
   Future<Map<String, String>> yastRetrieveFolders(
       SavedAppStatus theSavedStatus) async {
     Map<String, String> mapIdToFolders;
+    if (basicCheck(theSavedStatus.getUsername(),
+        theSavedStatus.hashPasswd) ==
+        false) {
+      return null;
+    }
     await _yastSendRetrieveRequest(theSavedStatus.getUsername(),
             theSavedStatus.hashPasswd, _data_getFolders)
         .then((yr) async {
@@ -142,23 +150,28 @@ class YastApi {
   /// Outside classes call this to retrieve all the records
   /// It also puts them in the Firestore database
   Future<Map<String, Record>> yastRetrieveRecords(
-      String username, String hashPwd, SavedAppStatus theSavedAppStatus,
+       SavedAppStatus theSavedAppStatus,
       {String startTimeStr = null,
       String endTimeStr = null,
       bool selectivelyDelete}) async {
+
     debugPrint('==========yastRetrieveRcords');
 
     DateTime fromDate;
+    DateTime preferredDate;
     String fromDateStr;
+    // if there's no supplied start time and end time, create default
+    // start and end times going from preferred date - 5 days to
+    // preffered date + 5 days
     if (startTimeStr == null) {
-      fromDate = theSavedAppStatus.getPreferredDate();
-      if (fromDate == null) {
-        DateTime now = new DateTime.now();
-        fromDate = now;
+      preferredDate = theSavedAppStatus.getPreferredDate();
+      if (preferredDate == null) {
+        preferredDate = new DateTime.now();
+        fromDate = preferredDate;
       }
 
-      fromDate = new DateTime(fromDate.year, fromDate.month, fromDate.day)
-          .subtract(Duration(days: 10));
+      fromDate = new DateTime(preferredDate.year, preferredDate.month, preferredDate.day)
+          .subtract(Duration(days: Constants.defaultGoBackThisManyDays));
       fromDateStr = localDateTimeToYastDate(fromDate);
     } else {
       fromDateStr = startTimeStr;
@@ -168,8 +181,8 @@ class YastApi {
     String toDateStr;
     if (endTimeStr == null) {
       DateTime toTime;
-      toTime = new DateTime(fromDate.year, fromDate.month, fromDate.day)
-          .add(Duration(days: 15));
+      toTime = new DateTime(preferredDate.year, preferredDate.month, preferredDate.day)
+          .add(Duration(days: Constants.defaultGoForwardThisManyDays));
       toDateStr = localDateTimeToYastDate(toTime);
     } else {
       toDateStr = endTimeStr;
@@ -183,10 +196,13 @@ class YastApi {
     optParams += "<" + _timeToParam + ">$toDateStr</" + _timeToParam + ">";
 
     YastResponse yr = await _yastSendRetrieveRequest(
-            username, hashPwd, _data_getRecords, optParams)
+            theSavedAppStatus.getUsername(),
+            theSavedAppStatus.hashPasswd,
+            _data_getRecords,
+            optParams)
         .timeout(Duration(seconds: Constants.HTTP_TIMEOUT));
 
-    Map<String, Record> retval;
+    Map<String, Record> mapOfRecords;
     if (yr != null) {
       if (yr.status != YastResponse.yastSuccess) {
         debugPrint("Retrieve records failed");
@@ -194,15 +210,15 @@ class YastApi {
         return null;
       } else {
         try {
-          retval = await yastParse.getRecordsFrom(yr.body);
-          await yastParse.putRecordsInDatabase(retval,
+          mapOfRecords = await yastParse.getRecordsFrom(yr.body);
+          await yastParse.putRecordsInDatabase(mapOfRecords,
               selectivelyDelete: selectivelyDelete);
         } catch (e) {
           debugPrint("exception retrieving records");
           throw (e);
         }
       }
-      return retval;
+      return mapOfRecords;
     } else {
       debugPrint("yastResponse is null $yr");
       return null;
@@ -210,6 +226,9 @@ class YastApi {
   } // yastRetrieveRecords
 
   /// Outside classes call this to delete a range of time records
+  /// Deletes from Yast servers,
+  /// Deletes from Firestore database and
+  /// Deletes from local cache.
   /// xml format:
   /// request req="data.delete" id="133">
   //    <objects>
@@ -222,12 +241,8 @@ class YastApi {
   //    <objects>
   //</response>
   Future<YastResponse> yastDeleteRecords(
-      //      String username,
-      //      String hashPwd,
-      SavedAppStatus theSavedStatus,
-      DateTime fromDate,
-      DateTime toDate) async {
-    debugPrint('==========yastDeleteRcords');
+      SavedAppStatus theSavedStatus, DateTime fromDate, DateTime toDate) async {
+    debugPrint('==========yastDeleteRecords');
 
     String fromDateString = localDateTimeToYastDate(
         DateTime(fromDate.year, fromDate.month, fromDate.day));
@@ -239,7 +254,7 @@ class YastApi {
     // in case this range of records hasn't been retrieved yet.
     // That way, we can pull the ids from the database.
     Map<String, Record> recs = await yastRetrieveRecords(
-        theSavedStatus.getUsername(), theSavedStatus.hashPasswd, theSavedStatus,
+        theSavedStatus,
         startTimeStr: fromDateString,
         endTimeStr: toDateString,
         selectivelyDelete: false);
@@ -249,30 +264,35 @@ class YastApi {
         .where('startTime', isGreaterThanOrEqualTo: fromDateString)
         .where('startTime', isLessThanOrEqualTo: toDateString);
     QuerySnapshot qss = await query.getDocuments();
-    List<String> ids = new List();
+    List<String> idsToDelete = new List();
     qss.documents.forEach((docSnap) {
       docSnap.data.keys;
       int startchar = 1 + docSnap.reference.path.indexOf('/', 0);
       String id = docSnap.reference.path
           .substring(startchar, docSnap.reference.path.length);
-      ids.add(id);
+      idsToDelete.add(id);
       debugPrint(" delete record start time: $docSnap.data.startTime");
     });
 
-    ids.sort((a, b) {
+    idsToDelete.sort((a, b) {
       return a.compareTo(b);
     });
-    debugPrint('ids to delete: $ids');
+    debugPrint('ids to delete: $idsToDelete');
+
+    // Delete from Yast's servers
     YastResponse yr = await _yastSendDeleteRequest(theSavedStatus.getUsername(),
-            theSavedStatus.hashPasswd, _data_delete, ids)
+            theSavedStatus.hashPasswd, _data_delete, idsToDelete)
         .timeout(Duration(seconds: Constants.HTTP_TIMEOUT));
     theSavedStatus.message =
-        'Attempt to delete ${ids.length} records, response ${yr.statusString}';
-    await yastParse.selectivelyDeleteFromCollection(
-        YastDb.DbRecordsTableName, ids.toSet());
+        'Attempt to delete ${idsToDelete.length} records, response ${yr.statusString}';
+    // Delete from Firestore database
+    await yastParse.selectivelyDeleteFromFirestoreCollection(
+        YastDb.DbRecordsTableName, idsToDelete.toSet());
+    // Delete from cached copy
     theSavedStatus.currentRecords.removeWhere((String s, Record rec) {
-      var result = ((rec.startTimeStr.compareTo(fromDateString) >= 0) &&
-          (rec.startTimeStr.compareTo(toDateString) <= 0));
+//      var result = ((rec.startTimeStr.compareTo(fromDateString) >= 0) &&
+//          (rec.startTimeStr.compareTo(toDateString) <= 0));
+      var result = idsToDelete.contains(s);
       return result;
     });
 
@@ -282,9 +302,7 @@ class YastApi {
   } // yastDeleteRecords
 
   /// Send a write-data message back to yast: store these records
-  /// TODO there's a limit on the number of records you can do at once,
-  /// so chunk this into smaller pieces. For now, i just won't store that
-  /// many all at once.
+  /// This stores them one at a time.
   Future<YastResponse> yastStoreNewRecords(
       SavedAppStatus theSavedAppStatus, Map<String, Record> newRecords) async {
     int count = 0;
@@ -307,12 +325,12 @@ class YastApi {
     return yr;
   }
 
-  // DON'T DO THIS until you're sure the records created in that Map and the database
-  //  are correct.
+  /// Store one new timeline record with yast.com
+  /// This stores them one at a time.
   Future<YastResponse> _yastSendStoreRequest(
       String username, String hashPwd, String httpRequestString,
       [String optionalParams]) async {
-    if (_basicCheck(username, hashPwd) == false) return null;
+    if (basicCheck(username, hashPwd) == false) return null;
 
     optionalParams ??= "";
     String xmlToSend = '<request req="' +
@@ -331,7 +349,7 @@ class YastApi {
   Future<YastResponse> _yastSendRetrieveRequest(
       String username, String hashPwd, String httpRequestString,
       [String optionalParams]) async {
-    if (_basicCheck(username, hashPwd) == false) return null;
+    if (basicCheck(username, hashPwd) == false) return null;
     optionalParams ??= "";
     String xmlToSend = '<request req="' +
         httpRequestString +
@@ -372,19 +390,4 @@ class YastApi {
     sendCounter++;
     return await yasthttp.sendToYastApi(xmlToSend);
   } //_yastSendDeleteRequest
-
-  bool _basicCheck(String username, String hashPwd) {
-    if ((username == null) || (username.runtimeType != String)) {
-      debugPrint("Attempt to retrieve something when there is no username!");
-      debugPrint("username = $username");
-      return false;
-    }
-    if ((hashPwd == null) || (hashPwd.runtimeType != String)) {
-      debugPrint(
-          "Attempt to retrieve something when there is no hash password!");
-      debugPrint("hashPwd = $hashPwd");
-      return false;
-    }
-    return true;
-  }
 }

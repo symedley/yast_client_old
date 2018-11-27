@@ -11,6 +11,10 @@ import 'constants.dart';
 // These must go into the database and be entered using the yast api
 Future<Map<String, Record>> createFutureRecords(
     Map<String, Record> records) async {
+  if (records == null ) {
+    debugPrint("createFutureRecords called with null collection");
+    return null;
+  }
   DateTime startReferenceDay = DateTime.parse(Constants.referenceDay);
   DateTime endReferenceDay = DateTime(
       startReferenceDay.year,
@@ -76,7 +80,7 @@ Future<Map<String, Record>> createFutureRecords(
       batchOfNewFakeRecords[fakeKey] = fakeRecord;
     });
     fakeDay = fakeDay.add(new Duration(days: 1));
-    count++; // TODO should this be inside the above loop of records?
+    count++; // TODO this is probably not necessary because the putRecordsInDatabase also breaks up yast API commands into blocks of 500 or less
   }
   if (true) {
     await putRecordsInDatabase(batchOfNewFakeRecords, selectivelyDelete: false);

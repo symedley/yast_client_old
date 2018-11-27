@@ -141,7 +141,13 @@ class SavedAppStatus {
     }
     try {
       return projects[id].name;
-    } catch (e) {
+    } on NoSuchMethodError catch (e) {
+      debugPrint('$e');
+      return "----";
+    } on TypeError catch (e) {
+      debugPrint('$e');
+      return "----";
+    } on UnsupportedError catch (e) {
       debugPrint('$e');
       return "----";
     }
@@ -153,7 +159,13 @@ class SavedAppStatus {
     }
     try {
       return projects[id].primaryColor;
-    } catch (e) {
+    } on NoSuchMethodError catch (e) {
+      debugPrint('$e');
+      return Constants.COLORSTRING;
+    } on TypeError catch (e) {
+      debugPrint('$e');
+      return Constants.COLORSTRING;
+    } on UnsupportedError catch (e) {
       debugPrint('$e');
       return Constants.COLORSTRING;
     }
@@ -161,20 +173,23 @@ class SavedAppStatus {
 
   Duration getDurationFromProjectId(String id) {
     try {
-//      return projectIdToDuration[id];
       return projectIdToDurationProject[id].duration;
-    } catch (e) {
+    } on NoSuchMethodError catch (e) {
+      return null;
+    } on TypeError catch (e) {
+      return null;
+    } on UnsupportedError catch (e) {
       return null;
     }
   }
 
-  /// create or update the duration values in these maps
+  /// Create or update the duration values in these maps
   /// in the saved app status:
-  ///     // projectIdToDuration
-  //    // projectNameToDuration
-  //    // projectIdToDurationProject
+  ///     projectIdToDuration
+  ///     projectNameToDuration
+  ///     projectIdToDurationProject
   void addToProjectDuration(
-      {@required Project project , Duration duration, int secsFromEpoch}) {
+      {@required Project project, Duration duration, int secsFromEpoch}) {
     if ((duration == null)) {
       if ((secsFromEpoch == null) || (secsFromEpoch <= 0)) {
         return; // do nothing
@@ -195,22 +210,23 @@ class SavedAppStatus {
         // should it be added in the project duration map?
         projectNameToDuration[project.name] = duration;
         projectIdToDuration[project.id] = duration;
-        projectIdToDurationProject[project.id]
-          = new DurationProject(duration, project);
+        projectIdToDurationProject[project.id] =
+            new DurationProject(duration, project);
       }
     }
   }
 
   /// Reset the info about project duration for the currently viewed day
   void resetProjectDurationMap() {
-    projectNameToDuration.forEach((k,v) {
+    projectNameToDuration.forEach((k, v) {
       v = new Duration(minutes: 0);
     });
-    projectIdToDuration.forEach((k,v) {
+    projectIdToDuration.forEach((k, v) {
       v = new Duration(minutes: 0);
     });
-    projectIdToDurationProject.forEach((k,v) {
-      v = new DurationProject(Duration(minutes: 0), v.project); // TODO check that this isn't messing up the project objects
+    projectIdToDurationProject.forEach((k, v) {
+      v = new DurationProject(Duration(minutes: 0),
+          v.project); // TODO check that this isn't messing up the project objects
     });
   }
 
@@ -221,8 +237,10 @@ class SavedAppStatus {
       return (b.value.inMilliseconds - a.value.inMilliseconds);
     });
     var tmp = projectIdToDurationProject.entries.toList();
-    tmp.sort((MapEntry<String, DurationProject> a, MapEntry<String, DurationProject> b) {
-      return (b.value.duration.inMilliseconds - a.value.duration.inMilliseconds);
+    tmp.sort((MapEntry<String, DurationProject> a,
+        MapEntry<String, DurationProject> b) {
+      return (b.value.duration.inMilliseconds -
+          a.value.duration.inMilliseconds);
     });
     return tmp;
   }
@@ -236,9 +254,15 @@ class SavedAppStatus {
     }
     try {
       return folderIdToName[id];
-    } catch (e) {
+    } on NoSuchMethodError catch (e) {
       print(e);
-      return '<folder>';
+      return null;
+    } on TypeError catch (e) {
+      print(e);
+      return null;
+    } on UnsupportedError catch (e) {
+      print(e);
+      return null;
     }
   }
 

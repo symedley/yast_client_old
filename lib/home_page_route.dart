@@ -53,12 +53,18 @@ class _MyHomePageState extends State<HomePageRoute> {
 
   /// Use this a s shortcut to test whatever feature I'm
   /// currently working on.
-  String _sDoSomething = 'retrieve records';
+  String _sDoSomething = 'Retrieve everything and create fakes.';
 
   void _fabButtonPressed() async {
     debugPrint('============================');
     debugPrint('==========_fabButtonPressed');
-
+    if (utilities.basicCheck(widget.theSavedStatus.getUsername(),
+            widget.theSavedStatus.hashPasswd) ==
+        false) {
+      utilities.showSnackbar(_scaffoldContext,
+          "Cannot do the FAB button because you are not logged in.");
+      return;
+    }
     await _retrieveAllProjects().then((_) {
       _retrieveAllFolders().then((_) {
         _retrieveRecords().then((_) {
@@ -78,7 +84,11 @@ class _MyHomePageState extends State<HomePageRoute> {
 
     Map<String, String> folderNameMap =
         await api.yastRetrieveFolders(widget.theSavedStatus);
-    widget.theSavedStatus.folderIdToName = folderNameMap;
+    if (folderNameMap == null) {
+      utilities.showSnackbar(_scaffoldContext, "You are not logged in.");
+    }
+    widget.theSavedStatus.folderIdToName =
+        folderNameMap; //TODO apply the same fix as was done on retrieve Projects to Folders
     widget.theSavedStatus.counterApiCallsCompleted++;
     debugPrint('==========END _retrieveAllFolders');
   }
@@ -90,10 +100,13 @@ class _MyHomePageState extends State<HomePageRoute> {
     widget.theSavedStatus.counterApiCallsStarted++;
     Map<String, Project> projectMap =
         await api.yastRetrieveProjects(widget.theSavedStatus);
-//    widget.theSavedStatus.projectIdToName = projectMap;
-    widget.theSavedStatus.addAllProjects(projectMap);
-    widget.theSavedStatus.projects = projectMap;
-    widget.theSavedStatus.counterApiCallsCompleted++;
+    if (projectMap != null) {
+      widget.theSavedStatus.addAllProjects(projectMap);
+      widget.theSavedStatus.projects = projectMap;
+      widget.theSavedStatus.counterApiCallsCompleted++;
+    } else {
+      utilities.showSnackbar(_scaffoldContext, "You are not logged in.");
+    }
   }
 
   /// retrieve Records AND CREATE TIMELINE LIST from the yast API.
@@ -101,24 +114,26 @@ class _MyHomePageState extends State<HomePageRoute> {
   /// Also build a TimelineModel list to store in aSavedState
   Future<void> _retrieveRecords() async {
     debugPrint('==========_retrieveRecords');
-
+    if (utilities.basicCheck(widget.theSavedStatus.getUsername(),
+            widget.theSavedStatus.hashPasswd) ==
+        false) {
+      utilities.showSnackbar(_scaffoldContext, "You are not logged in.");
+      return;
+    }
     YastApi api = YastApi.getApi();
     widget.theSavedStatus.counterApiCallsStarted++;
-    Map<String, Record> recs = await api.yastRetrieveRecords(
-        widget.theSavedStatus.getUsername(),
-        widget.theSavedStatus.hashPasswd,
-        widget.theSavedStatus,
-        selectivelyDelete: false);
+    Map<String, Record> recs = await api
+        .yastRetrieveRecords(widget.theSavedStatus, selectivelyDelete: true);
     if (recs != null) {
-      widget.theSavedStatus.currentRecords = recs; // TODO review this: this line could throw out some records, but thedatabase will still have those.
+      widget.theSavedStatus.currentRecords =
+          recs; // TODO review this: this line could throw out some records, but thedatabase will still have those.
     } else {
-      // get the records from the dtabaae
+      // TODO ? get the records from the database
     }
 
     widget.theSavedStatus.counterApiCallsCompleted++;
 
-    // TODO if the user is now looking at another tab, such as Timeline,
-    // how to trigger that to update?
+    // TODO if the user is now looking at another tab, such as Timeline, how to trigger that to update? Answer: this logic should not be in this userinterface page-route. the Logic to update the counters should be in the model itself.
   }
 
   /// Create fake records for purposes of creating a lot of days worth
@@ -129,30 +144,31 @@ class _MyHomePageState extends State<HomePageRoute> {
     //
     // DEBUG: create future fake records
     DateTime startReferenceDay = DateTime.parse(Constants.referenceDay);
-    String startReferenceDayStr = utilities.localDateTimeToYastDate(startReferenceDay);
+    String startReferenceDayStr =
+        utilities.localDateTimeToYastDate(startReferenceDay);
 //  DateTime endReferenceDay = DateTime.parse('2018-10-24 23:59:00');
     DateTime endReferenceDay = DateTime(startReferenceDay.year,
         startReferenceDay.month, startReferenceDay.day, 23, 59, 0);
-    String endReferenceDayStr = utilities.localDateTimeToYastDate(endReferenceDay);
+    String endReferenceDayStr =
+        utilities.localDateTimeToYastDate(endReferenceDay);
     // Map referenceDayRecords =
     widget.theSavedStatus.counterApiCallsStarted++;
     Map<String, Record> referenceRecs = await api.yastRetrieveRecords(
-        widget.theSavedStatus.getUsername(),
-        widget.theSavedStatus.hashPasswd,
         widget.theSavedStatus,
         startTimeStr: startReferenceDayStr,
         endTimeStr: endReferenceDayStr,
         selectivelyDelete: false);
     debugPrint('referenceRecs: $referenceRecs');
     widget.theSavedStatus.counterApiCallsCompleted++;
-    Map<String, Record> newFakeRecords = await debug.createFutureRecords(referenceRecs);
+    Map<String, Record> newFakeRecords =
+        await debug.createFutureRecords(referenceRecs);
     // create the fake records should also store them in the database.
 //    widget.theSavedStatus.counterApiCallsStarted++;
 //    await api.yastStoreNewRecords(widget.theSavedStatus, newFakeRecords);
 //    widget.theSavedStatus.counterApiCallsCompleted++;
     widget.theSavedStatus.currentRecords.addAll(newFakeRecords);
-    YastResponse yr = await api.yastStoreNewRecords(
-        widget.theSavedStatus, newFakeRecords);
+    YastResponse yr =
+        await api.yastStoreNewRecords(widget.theSavedStatus, newFakeRecords);
     debugPrint(yr.toString());
   } // _createFakes
 
@@ -183,9 +199,8 @@ class _MyHomePageState extends State<HomePageRoute> {
     widget.theSavedStatus.counterApiCallsStarted++;
     // Possible refactor: this could use the fields  _beginDaySeconds and _endDaySeconds
     // to save processing in yastDeleteRecords.
-    await api.yastDeleteRecords(widget.theSavedStatus, _fromDateDelete, _toDateDelete);
-//    widget.theSavedStatus.projectIdToName = projectMap;
-    // TODO remove those from the local cache of records (map)
+    await api.yastDeleteRecords(
+        widget.theSavedStatus, _fromDateDelete, _toDateDelete);
   }
 
   /// Use the YastApi to send an async message
@@ -233,14 +248,15 @@ class _MyHomePageState extends State<HomePageRoute> {
   String _fromDateDeleteString = '', _toDateDeleteString = '';
 
   Future<DateTime> _pickDeleteFromDate() async {
-   DateTime date = await _pickDate();
+    DateTime date = await _pickDate();
     if (date == null) {
       return null;
     } else {
       setState(() {
         _fromDateDelete = date;
         _fromDateDeleteString = DateFormat.Md().format(_fromDateDelete);
-        _beginDaySeconds = utilities.dateTimetoSecondsSinceEpoch(_fromDateDelete);
+        _beginDaySeconds =
+            utilities.dateTimetoSecondsSinceEpoch(_fromDateDelete);
       });
       return _fromDateDelete;
     }
@@ -292,11 +308,13 @@ class _MyHomePageState extends State<HomePageRoute> {
 
     if (_fromDateDelete == null) {
       _fromDateDelete = DateTime.now();
-      _fromDateDelete = DateTime(_fromDateDelete.year, _fromDateDelete.month, _fromDateDelete.day);
+      _fromDateDelete = DateTime(
+          _fromDateDelete.year, _fromDateDelete.month, _fromDateDelete.day);
     }
     if (_toDateDelete == null) {
       _toDateDelete = DateTime.now();
-      _toDateDelete = DateTime(_toDateDelete.year, _toDateDelete.month, _toDateDelete.day);
+      _toDateDelete =
+          DateTime(_toDateDelete.year, _toDateDelete.month, _toDateDelete.day);
     }
 
     mapTheProjectIdAndNames();
@@ -306,20 +324,20 @@ class _MyHomePageState extends State<HomePageRoute> {
         FlatButton(onPressed: _resetButtonPressed, child: Text("Reset"));
     var logoutButton =
         FlatButton(onPressed: _logoutButtonPressed, child: Text("Logout"));
-    var deleteRecordsButton =
-      Container(
-        padding: EdgeInsets.only(top: 10.0),
-        alignment: Alignment(0.0, -1.0),
-        width: 300.0,
-        height: 60.0,
-        child: FlatButton(
-          onPressed: _deleteRecordsButtonPressed,
-          color: Constants.deleteButtonColor,
-          child: Text( "Delete records from $_fromDateDeleteString...to $_toDateDeleteString",
-            style: TextStyle(color: Colors.black),
-          ),
+    var deleteRecordsButton = Container(
+      padding: EdgeInsets.only(top: 10.0),
+      alignment: Alignment(0.0, -1.0),
+      width: 300.0,
+      height: 60.0,
+      child: FlatButton(
+        onPressed: _deleteRecordsButtonPressed,
+        color: Constants.deleteButtonColor,
+        child: Text(
+          "Delete records from $_fromDateDeleteString...to $_toDateDeleteString",
+          style: TextStyle(color: Colors.black),
         ),
-      );
+      ),
+    );
     var body;
 
     var rowCountersText = Row(
@@ -392,7 +410,9 @@ class _MyHomePageState extends State<HomePageRoute> {
             onPressed: _pickDeleteFromDate,
             color: Constants.dateChooserButtonColor,
             child: Text(
-              (_fromDateDelete == null) ? 'From: <date>' : 'From: ' + DateFormat.yMd().format(_fromDateDelete),
+              (_fromDateDelete == null)
+                  ? 'From: <date>'
+                  : 'From: ' + DateFormat.yMd().format(_fromDateDelete),
               style: TextStyle(color: Colors.black),
             ),
           ),
@@ -406,7 +426,9 @@ class _MyHomePageState extends State<HomePageRoute> {
             onPressed: _pickDeleteToDate,
             color: Constants.dateChooserButtonColor,
             child: Text(
-              (_toDateDelete == null) ? 'To: <date>' : 'To: ' + DateFormat.yMd().format(_toDateDelete),
+              (_toDateDelete == null)
+                  ? 'To: <date>'
+                  : 'To: ' + DateFormat.yMd().format(_toDateDelete),
               style: TextStyle(color: Colors.black),
             ),
           ),
@@ -466,7 +488,7 @@ class _MyHomePageState extends State<HomePageRoute> {
             rowCountersText,
             rowCounters,
             deleteDatesPickers,
-            deleteRecordsButton ,
+            deleteRecordsButton,
             logoutButton
           ];
           break;

@@ -148,7 +148,6 @@ class _DaySummaryPanelState extends State {
 //                  Set<Projnew Duration(hours: 23, minutes: 59));
 //                  int i = 0;
                   dss.forEach((DocumentSnapshot ds) {
-                    // TODO this really should be someplace else--pulling data from database and
                     // putting in app's model.
                     var recordFromDb = Record.fromDocumentSnapshot(ds);
                     theSavedStatus.currentRecords[recordFromDb.id] =
@@ -161,16 +160,18 @@ class _DaySummaryPanelState extends State {
                     //                        ' --- $i ---> $tmpFromdate , ${recordFromDb.startTime} $toDate');
 //                    i++;
                     // for now, use only start time. Ignore end time.
-                    if ((_beginDaySeconds.compareTo(
-                            (recordFromDb.startTimeStr)) < 0) &&
-                        (_endDaySeconds.compareTo(
-                            recordFromDb.startTimeStr)) > 0 ) {
+                    if ((_beginDaySeconds
+                                .compareTo((recordFromDb.startTimeStr)) <
+                            0) &&
+                        (_endDaySeconds.compareTo(recordFromDb.startTimeStr)) >
+                            0) {
                       theSavedStatus.addToProjectDuration(
                           project:
                               theSavedStatus.projects[recordFromDb.projectId],
                           duration: recordFromDb.duration());
-                    }else {
-                      debugPrint('Record ${recordFromDb.toString()} was NOT in range to be displayed. why?');
+                    } else {
+                      debugPrint(
+                          'Record ${recordFromDb.toString()} was NOT in range to be displayed. why?');
                     }
                   });
                   //Sort the duration projects
@@ -189,6 +190,12 @@ class _DaySummaryPanelState extends State {
                       decoration: new BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment(0.0, 0.0),
+                      child: Text(
+                        Constants.emptyPieChartMessage,
+                        style: Theme.of(context).textTheme.caption,
+                        textAlign: TextAlign.center,
                       ),
                     );
                   }
@@ -359,9 +366,8 @@ class _DaySummaryPanelState extends State {
       padding: new EdgeInsets.all(barEdgeInsets),
       child: InkWell(
         borderRadius: BorderRadius.circular((Constants.BORDERRADIUS) / 4),
-        // TODO fix these ink splash colors
-        highlightColor: Colors.yellow,
-        splashColor: Colors.white,
+        highlightColor: Theme.of(context).highlightColor,
+        splashColor: Theme.of(context).highlightColor,
         onTap: _onTap,
         child: Row(children: [
           Container(

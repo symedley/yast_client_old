@@ -2,9 +2,13 @@ import 'package:flutter/widgets.dart';
 
 class Constants {
 //  static const String referenceDay = '2018-11-13';
-  static const String referenceDay = '2018-11-17';
-  static const String firstFakeRecordsDay = '2018-11-19';
+  static const String referenceDay = '2018-11-20';
+  static const String firstFakeRecordsDay = '2018-11-21';
   static const int fakeDayMorningStartTime = 7;
+
+  // retrieve records around the preferredDate. Go back this many days and forward this many days.
+  static const int defaultGoBackThisManyDays = 10;
+  static const int defaultGoForwardThisManyDays = 10;
 
   static const int HTTP_TIMEOUT = 90; //seconds
   static const double BORDERRADIUS = (32.0);
@@ -17,5 +21,7 @@ class Constants {
 
   static const Color dateChooserButtonColor = Color(0xff9e9e9e); //Colors.grey[300];??
   static const Color deleteButtonColor = Color(0xffFF0000);
+
+  static const String emptyPieChartMessage = 'No data for this day';
 
 }

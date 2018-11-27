@@ -19,15 +19,24 @@ const String projectStr = 'project'; //plural
 const String folderStr = 'folder';
 const String recordStr = 'record';
 
+/// Create Folders from the XML
 Future<Map<String, String>> getFoldersFrom(xml.XmlDocument xmlBody) async {
   debugPrint('-------------********** _getFoldersFrom');
 
   List<xml.XmlElement> xmlObjs = await _getXmlObjectsFrom(xmlBody, folderStr);
   Map<String, Folder> mapFolderIdName = new Map();
-  var retval =
-      await _getYastObjectsFromAndStoreInDb(mapFolderIdName, TypeXmlObject.Folder, xmlObjs);
+  var retval = await _getYastObjectsFromXmlAndStoreInDb(
+      mapFolderIdName, TypeXmlObject.Folder, xmlObjs);
   debugPrint('-------------**********END  _getFoldersFrom');
   return retval;
+}
+
+/// Create Projects from the XML
+Future<Map<String, Project>> getProjectsFrom(xml.XmlDocument xmlBody) async {
+  List<xml.XmlElement> xmlObjs = _getXmlObjectsFrom(xmlBody, projectStr);
+  Map<String, Project> mapProjects = new Map();
+  return await _getYastObjectsFromXmlAndStoreInDb(
+      mapProjects, TypeXmlObject.Project, xmlObjs);
 }
 
 /// _getXmlObjectsFrom gets Projects or Folders out of this
@@ -43,12 +52,6 @@ List<xml.XmlElement> _getXmlObjectsFrom(
     xmlObjectList.add(it);
   });
   return xmlObjectList;
-}
-
-Future<Map<String, Project>> getProjectsFrom(xml.XmlDocument xmlBody) async {
-  List<xml.XmlElement> xmlObjs = _getXmlObjectsFrom(xmlBody, projectStr);
-  Map<String, Project> mapProjects = new Map();
-  return await _getYastObjectsFromAndStoreInDb(mapProjects, TypeXmlObject.Project, xmlObjs);
 }
 
 ///getRecordsFrom
@@ -129,11 +132,16 @@ Future<void> putRecordsInDatabase(Map<String, Record> recs,
     debugPrint("====final store records count: $counter");
   }
   debugPrint("============== total records count: $counter");
-  debugPrint("============== list of record keys to delete: $oldKeys");
+  if (oldKeys.isNotEmpty) {
+    debugPrint("============== list of record keys to delete: $oldKeys");
+  } else {
+    debugPrint("============== there are no oldKeys to delete.");
+  }
 
   // the new list of records just gotten from yast.com
   if (selectivelyDelete)
-    await selectivelyDeleteFromCollection(YastDb.DbRecordsTableName, oldKeys);
+    await selectivelyDeleteFromFirestoreCollection(
+        YastDb.DbRecordsTableName, oldKeys);
   // TODO if saving is done in batches, when do i selectivelhy delete?
 
   await batch.commit().timeout(Duration(seconds: Constants.HTTP_TIMEOUT));
@@ -142,8 +150,7 @@ Future<void> putRecordsInDatabase(Map<String, Record> recs,
 /// a List of the keys of the named collection in Firebase Cloud Firestore
 Future<Set<String>> _getKeysOfCollection(String collectionName) async {
   debugPrint('-------------**********_getKeysOfCollection');
-  // TODO a try-catch since for most database errors in deleting old
-  // stuff, we want to continue on.
+
   Query query = Firestore.instance.collection(collectionName);
   QuerySnapshot qss = await query.getDocuments();
   Set<String> retval = new Set();
@@ -166,28 +173,32 @@ Future<void> selectivelyDeleteRecordsWithinDateRange(Set<Record> recsToExamine,
       keysToDelete.add(rec.id);
     }
   });
-  await selectivelyDeleteFromCollection(
+  await selectivelyDeleteFromFirestoreCollection(
       YastDb.DbRecordsTableName, keysToDelete);
 }
 
 /// Delete only records matching these keys from the named Firestore collection
-Future<void> selectivelyDeleteFromCollection(
+Future<void> selectivelyDeleteFromFirestoreCollection(
     String collectionName, Set<String> theTargets) async {
   int counter = 0;
-  WriteBatch batch = Firestore.instance.batch();
-  theTargets.forEach((String key) {
-    if (((counter % YastDb.BATCHLIMIT) == 0) && (counter > 0)) {
-      batch.commit();
-      batch = Firestore.instance.batch();
-      debugPrint("====mid way DELETE records count: $counter");
-    }
-    DocumentReference dr =
-        Firestore.instance.document('${YastDb.DbRecordsTableName}/$key');
-    batch.delete(dr);
+  try {
+    WriteBatch batch = Firestore.instance.batch();
+    theTargets.forEach((String key) {
+      if (((counter % YastDb.BATCHLIMIT) == 0) && (counter > 0)) {
+        batch.commit();
+        batch = Firestore.instance.batch();
+        debugPrint("====mid way DELETE records count: $counter");
+      }
+      DocumentReference dr =
+          Firestore.instance.document('${YastDb.DbRecordsTableName}/$key');
+      batch.delete(dr);
 
-    counter++;
-  });
-  await batch.commit().timeout(Duration(seconds: Constants.HTTP_TIMEOUT));
+      counter++;
+    });
+    await batch.commit().timeout(Duration(seconds: Constants.HTTP_TIMEOUT));
+  } on UnsupportedError catch (e) {
+    debugPrint("Error deleting records from Firestore $e");
+  }
 }
 
 /// Brute force delete all documents in a collection of the given name.
@@ -195,53 +206,58 @@ Future<void> selectivelyDeleteFromCollection(
 /// TODO no longer needed?
 Future<void> _deleteAllDocsInCollection(String collectionName) async {
   debugPrint('-------------**********_deleteAllDocsInCollection');
-  // TODO a try-catch since for most database errors in deleting old
   // stuff, we want to continue on.
-  Query query = Firestore.instance.collection(collectionName);
-  int counter = 0;
-  WriteBatch batchDelete = Firestore.instance.batch();
-  QuerySnapshot qss = await query.getDocuments();
-  qss.documents.forEach((snap) async {
-    if ((counter % YastDb.BATCHLIMIT) == 0) {
-      batchDelete.commit();
-      batchDelete = Firestore.instance.batch();
-      debugPrint("====mid way deletion count: $counter");
-    }
-    if (collectionName == 'folders') {
-      debugPrint('-------------**********these docs are folders');
+  try {
+    Query query = Firestore.instance.collection(collectionName);
+    int counter = 0;
+    WriteBatch batchDelete = Firestore.instance.batch();
+    QuerySnapshot qss = await query.getDocuments();
+    qss.documents.forEach((snap) async {
+      if ((counter % YastDb.BATCHLIMIT) == 0) {
+        batchDelete.commit();
+        batchDelete = Firestore.instance.batch();
+        debugPrint("====mid way deletion count: $counter");
+      }
+      if (collectionName == 'folders') {
+        debugPrint('-------------**********these docs are folders');
 
-      Query querySubCollections = await snap.reference.collection('children');
-      QuerySnapshot subcollectionSnap =
-          await querySubCollections.getDocuments();
-      subcollectionSnap.documents.forEach((subSnap) async {
-        await subSnap.reference.delete();
-      });
-    }
-    batchDelete.delete(snap.reference);
-    counter++;
-  });
-  batchDelete.commit();
-  debugPrint("============== _deleteAllDocsInCollection count: $counter");
+        Query querySubCollections = await snap.reference.collection('children');
+        QuerySnapshot subcollectionSnap =
+        await querySubCollections.getDocuments();
+        subcollectionSnap.documents.forEach((subSnap) async {
+          await subSnap.reference.delete();
+        });
+      }
+      batchDelete.delete(snap.reference);
+      counter++;
+    });
+    batchDelete.commit();
+    debugPrint("============== _deleteAllDocsInCollection count: $counter");
+  } on UnsupportedError catch (e) {
+    debugPrint("Error deleting documents from Firestore $e");
+  }
 } //_deleteAllDocsInCollection
 
-/// getYastObjectsFrom - most of the logic in getYastProjects and getYastFoldesr
+/// Get YastObjects - Projects or Folders, from the colletion
+/// of XML objects provided and store in the Firestore database.
+/// Most of the logic for retrieving Projects and Folders
 /// is the same.
-/// returns the Map that was passed in.
-Future<Map<String, dynamic>> _getYastObjectsFromAndStoreInDb(
+/// NOT for Record objects.
+/// Changes mapYastObjects. mapYastObjects is expected (but not required) to be
+/// empty when passed in.
+/// Returns the Map that was passed in.
+Future<Map<String, dynamic>> _getYastObjectsFromXmlAndStoreInDb(
     Map<String, YastObject> mapYastObjects,
     TypeXmlObject whichOne,
-    //   String tableName,
     List<xml.XmlElement> xmlObjs) async {
   debugPrint("---------_getYastObjectsFrom");
 
-  String tableName;
-  tableName = (whichOne == TypeXmlObject.Project)
+  String collectionName;
+  collectionName = (whichOne == TypeXmlObject.Project)
       ? YastDb.DbProjectsTableName
       : YastDb.DbFoldersTableName;
 
   Set<String> oldKeys = new Set.from(mapYastObjects.keys);
-
-//  List<YastObject> objects = new List<YastObject>();
 
   xmlObjs.forEach((it) {
     var obj;
@@ -257,21 +273,16 @@ Future<Map<String, dynamic>> _getYastObjectsFromAndStoreInDb(
   });
   debugPrint(mapYastObjects.toString());
 
-  // remove old
-  // TODO change to a batch operation
-//  oldMap.forEach((mapObj) {
-//    DocumentReference dr =
-//        Firestore.instance.document('$tableName/${mapObj.key}');
-//    dr.delete();
-//  });
-//  Set<String> targets = oldMap.map((obj) {
-//    return obj.id;
-//  });
-  selectivelyDeleteFromCollection(tableName, oldKeys );
+  // When will there be Projects/Folders to delete from
+  // Yast and from the database? When the incoming
+  // XML is missing one or more of the Projects/Folders
+  // that is in the mapYastObjects.
+  selectivelyDeleteFromFirestoreCollection(collectionName, oldKeys);
+  // TODO do i need to remove the oldKey pairvalues from the mapYastObjects, too?
 
   WriteBatch batch = Firestore.instance.batch();
   mapYastObjects.values.forEach((obj) async {
-    DocumentReference dr = Firestore.instance.document('$tableName/${obj.id}');
+    DocumentReference dr = Firestore.instance.document('$collectionName/${obj.id}');
     batch.setData(dr, {
       YastObject.FIELDSMAPID: obj.id,
       YastObject.FIELDSMAPNAME: obj.name,
@@ -285,11 +296,7 @@ Future<Map<String, dynamic>> _getYastObjectsFromAndStoreInDb(
     });
   });
   await batch.commit().timeout(Duration(seconds: 30));
-//    if (whichOne == TypeXmlObject.Folder) {
-//      await _arrangeFoldersInHeirarchy();
-//    }
-  debugPrint("---------END _getYastObjectsFrom");
 
-//  return mapIdToYastObjects;
+  debugPrint("---------END _getYastObjectsFrom");
   return mapYastObjects;
 } //_getYastObjectsFrom
