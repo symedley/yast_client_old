@@ -256,7 +256,7 @@ class YastApi {
       String id = docSnap.reference.path
           .substring(startchar, docSnap.reference.path.length);
       ids.add(id);
-      debugPrint(" delete record start time: $docSnap.data");
+      debugPrint(" delete record start time: $docSnap.data.startTime");
     });
 
     ids.sort((a, b) {

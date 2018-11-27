@@ -23,7 +23,7 @@ Future<Map<String, String>> getFoldersFrom(xml.XmlDocument xmlBody) async {
   debugPrint('-------------********** _getFoldersFrom');
 
   List<xml.XmlElement> xmlObjs = await _getXmlObjectsFrom(xmlBody, folderStr);
-  Map<String, String> mapFolderIdName = new Map();
+  Map<String, Folder> mapFolderIdName = new Map();
   var retval =
       await _getYastObjectsFromAndStoreInDb(mapFolderIdName, TypeXmlObject.Folder, xmlObjs);
   debugPrint('-------------**********END  _getFoldersFrom');
@@ -228,7 +228,7 @@ Future<void> _deleteAllDocsInCollection(String collectionName) async {
 /// is the same.
 /// returns the Map that was passed in.
 Future<Map<String, dynamic>> _getYastObjectsFromAndStoreInDb(
-    Map<String, dynamic> mapYastObjects,
+    Map<String, YastObject> mapYastObjects,
     TypeXmlObject whichOne,
     //   String tableName,
     List<xml.XmlElement> xmlObjs) async {

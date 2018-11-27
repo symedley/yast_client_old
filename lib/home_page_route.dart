@@ -110,7 +110,7 @@ class _MyHomePageState extends State<HomePageRoute> {
         widget.theSavedStatus,
         selectivelyDelete: false);
     if (recs != null) {
-      widget.theSavedStatus.currentRecords = recs;
+      widget.theSavedStatus.currentRecords = recs; // TODO review this: this line could throw out some records, but thedatabase will still have those.
     } else {
       // get the records from the dtabaae
     }

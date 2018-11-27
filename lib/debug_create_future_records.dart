@@ -28,6 +28,7 @@ Future<Map<String, Record>> createFutureRecords(
     }
   });
   int count = 0;
+  Map<String, Record> batchOfNewFakeRecords = new Map();
   Map<String, Record> newFakeRecords = new Map();
   DateTime fakeDay = DateTime.parse(Constants.firstFakeRecordsDay);//local time zone
   // fakeDay is in local time
@@ -40,8 +41,9 @@ Future<Map<String, Record>> createFutureRecords(
     fakeTime = fakeDay.add(new Duration(hours: Constants.fakeDayMorningStartTime));
 
     if (((recordCount % YastDb.FAKERECORDSBATCHLIMIT)==0) && (recordCount != 0)) {
-      await putRecordsInDatabase(newFakeRecords);
-      newFakeRecords.clear();
+      await putRecordsInDatabase(batchOfNewFakeRecords);
+      newFakeRecords.addAll(batchOfNewFakeRecords);
+      batchOfNewFakeRecords.clear();
     }
     recsToCopy.forEach((rec) {
       recordCount++;
@@ -71,15 +73,14 @@ Future<Map<String, Record>> createFutureRecords(
       fakeRecord.comment =
           fakeRecord.yastObjectFieldsMap[Record.FIELDSMAPCOMMENT];
       debugPrint('fake rec: id:${fakeRecord.id} comment:${fakeRecord.comment}');
-      newFakeRecords[fakeKey] = fakeRecord;
+      batchOfNewFakeRecords[fakeKey] = fakeRecord;
     });
     fakeDay = fakeDay.add(new Duration(days: 1));
     count++; // TODO should this be inside the above loop of records?
   }
-  Map<String, Record> retval = Map.from(newFakeRecords);
   if (true) {
-    await putRecordsInDatabase(newFakeRecords, selectivelyDelete: false);
-    newFakeRecords.clear();
+    await putRecordsInDatabase(batchOfNewFakeRecords, selectivelyDelete: false);
+    newFakeRecords.addAll(batchOfNewFakeRecords);
   }
-  return retval;
+  return newFakeRecords;
 } // create fake records
