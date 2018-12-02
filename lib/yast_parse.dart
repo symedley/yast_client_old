@@ -127,13 +127,12 @@ Future<void> putRecordsInDatabase(Map<String, Record> recs,
     counter++;
   });
   if (true) {
-    batch.commit();
-    batch = Firestore.instance.batch();
+    await batch.commit().timeout(Duration(seconds: Constants.HTTP_TIMEOUT));
     debugPrint("====final store records count: $counter");
   }
   debugPrint("============== total records count: $counter");
   if (oldKeys.isNotEmpty) {
-    debugPrint("============== list of record keys to delete: $oldKeys");
+    debugPrint("============== number of record keys to delete: ${oldKeys.length}");
   } else {
     debugPrint("============== there are no oldKeys to delete.");
   }
@@ -144,7 +143,6 @@ Future<void> putRecordsInDatabase(Map<String, Record> recs,
         YastDb.DbRecordsTableName, oldKeys);
   // TODO if saving is done in batches, when do i selectivelhy delete?
 
-  await batch.commit().timeout(Duration(seconds: Constants.HTTP_TIMEOUT));
 } // _putRecordsInDatabase
 
 /// a List of the keys of the named collection in Firebase Cloud Firestore

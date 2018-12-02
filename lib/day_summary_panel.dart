@@ -11,6 +11,7 @@ import 'Model/yast_db.dart';
 import 'Model/project.dart';
 import 'Model/record.dart';
 import 'utilities.dart' as utilities;
+import 'yast_api.dart' ;
 import 'constants.dart';
 import 'duration_project.dart';
 
@@ -43,7 +44,10 @@ class DaySummaryPanel extends StatefulWidget {
 }
 
 class _DaySummaryPanelState extends State {
+  YastApi api;
+
   _DaySummaryPanelState(this.theSavedStatus) {
+    api = YastApi.getApi();
     _fromDate = theSavedStatus.getPreferredDate();
     if (_fromDate == null) {
       _fromDate = new DateTime.now();
@@ -94,7 +98,11 @@ class _DaySummaryPanelState extends State {
   String _beginDaySeconds, _endDaySeconds;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context)  {
+    // start a retrieve which will automatically get records around the current preferred day
+    // This is an async, and it's ok for it to complete later because the Stream in the build()
+    // function is listening to the same FireStore data that this retrieve call is affecting.
+    api.yastRetrieveRecords(theSavedStatus, selectivelyDelete:true);
     theSavedStatus.resetProjectDurationMap();
     updateProjectIdToName();
     _scaffoldContext = context;
@@ -118,6 +126,9 @@ class _DaySummaryPanelState extends State {
                     .collection(YastDb.DbRecordsTableName)
                     .where("startTime",
                         isGreaterThanOrEqualTo: _beginDaySeconds)
+//        Are compound queries not supported in Dart/Flutter?fab
+//                .where("endTime",
+//                        isLessThanOrEqualTo: _endDaySeconds")
                     .snapshots(),
                 builder: (context, snapshot) {
                   // Loading...
@@ -138,15 +149,7 @@ class _DaySummaryPanelState extends State {
                   List<DocumentSnapshot> dss = snapshot.data.documents;
 
                   // Records, Filter records and Pie chart
-//                  Set<Project> projectsSet = theSavedStatus.projects.values.toSet();
-//                  List<DurationProject> durationProjects = new List();
-//                  List todaysRecords = new List<Record>();
-//                  DateTime beginTimeSegment = DateTime.parse(
-//                  new DateFormat('y-MM-dd').format(_fromDate));
-//                  DateTime endTimeSegment = beginTimeSegment
-//                      .add(ect> usedProjectsSet = new Set();
-//                  Set<Projnew Duration(hours: 23, minutes: 59));
-//                  int i = 0;
+
                   dss.forEach((DocumentSnapshot ds) {
                     // putting in app's model.
                     var recordFromDb = Record.fromDocumentSnapshot(ds);
@@ -156,10 +159,7 @@ class _DaySummaryPanelState extends State {
                         recordFromDb;
                     debugPrint(
                         'in Streambuilder, retrieved rec: ${recordFromDb.id} ${recordFromDb.comment}');
-                    //                    debugPrint(
-                    //                        ' --- $i ---> $tmpFromdate , ${recordFromDb.startTime} $toDate');
-//                    i++;
-                    // for now, use only start time. Ignore end time.
+
                     if ((_beginDaySeconds
                                 .compareTo((recordFromDb.startTimeStr)) <
                             0) &&
@@ -287,19 +287,6 @@ class _DaySummaryPanelState extends State {
                       color: common.Color.black, fontSize: 12))
             ]));
     return pieChart;
-
-//    defaultRenderer: new charts.ArcRendererConfig(arcRendererDecorators: [
-//          new charts.ArcLabelDecorator(
-//              labelPosition: charts.ArcLabelPosition.auto,
-//            insideLabelStyleSpec:
-//            common.TextStyleSpec(
-//                fontFamily: 'Arial'
-//                ,color: common.Color.fromHex(code:  'xff4444ff')),
-//              outsideLabelStyleSpec:
-//                  common.TextStyleSpec(
-//                      fontFamily: 'Arial'
-//                      ,color: common.Color.black))
-//        ]));
   }
 
   /// Create pie segments from the DurationProject data, which should be sorted

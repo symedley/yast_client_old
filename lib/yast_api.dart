@@ -118,8 +118,7 @@ class YastApi {
       SavedAppStatus theSavedStatus) async {
     Map<String, String> mapIdToFolders;
     if (basicCheck(theSavedStatus.getUsername(),
-        theSavedStatus.hashPasswd) ==
-        false) {
+        theSavedStatus.hashPasswd) ==  false) {
       return null;
     }
     await _yastSendRetrieveRequest(theSavedStatus.getUsername(),
@@ -161,8 +160,8 @@ class YastApi {
     DateTime preferredDate;
     String fromDateStr;
     // if there's no supplied start time and end time, create default
-    // start and end times going from preferred date - 5 days to
-    // preffered date + 5 days
+    // start and end times going from preferred date - a buffer of days to
+    // preffered date + a buffer of  days
     if (startTimeStr == null) {
       preferredDate = theSavedAppStatus.getPreferredDate();
       if (preferredDate == null) {
@@ -257,7 +256,7 @@ class YastApi {
         theSavedStatus,
         startTimeStr: fromDateString,
         endTimeStr: toDateString,
-        selectivelyDelete: false);
+        selectivelyDelete: true);
 
     Query query = Firestore.instance
         .collection(YastDb.DbRecordsTableName)
@@ -292,7 +291,7 @@ class YastApi {
     theSavedStatus.currentRecords.removeWhere((String s, Record rec) {
 //      var result = ((rec.startTimeStr.compareTo(fromDateString) >= 0) &&
 //          (rec.startTimeStr.compareTo(toDateString) <= 0));
-      var result = idsToDelete.contains(s);
+      var result = !idsToDelete.contains(s);
       return result;
     });
 
@@ -310,6 +309,7 @@ class YastApi {
     if ((newRecords == null) || (newRecords.isEmpty)) {
       return null;
     }
+    // TODO ? chagne to batch operation?
     newRecords.forEach((k, Record record) async {
       debugPrint('storing rec: id:${record.id} comment:${record.comment}');
       var builder = new xml.XmlBuilder();

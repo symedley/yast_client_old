@@ -3,7 +3,8 @@ import 'package:flutter/widgets.dart';
 class Constants {
 //  static const String referenceDay = '2018-11-13';
   static const String referenceDay = '2018-11-20';
-  static const String firstFakeRecordsDay = '2018-11-21';
+  static const String firstFakeRecordsDay = '2018-06-05';
+  static const int numberOfFakeDaysToMake = 1;
   static const int fakeDayMorningStartTime = 7;
 
   // retrieve records around the preferredDate. Go back this many days and forward this many days.

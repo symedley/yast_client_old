@@ -84,9 +84,7 @@ class _MyHomePageState extends State<HomePageRoute> {
 
     Map<String, String> folderNameMap =
         await api.yastRetrieveFolders(widget.theSavedStatus);
-    if (folderNameMap == null) {
-      utilities.showSnackbar(_scaffoldContext, "You are not logged in.");
-    }
+
     widget.theSavedStatus.folderIdToName =
         folderNameMap; //TODO apply the same fix as was done on retrieve Projects to Folders
     widget.theSavedStatus.counterApiCallsCompleted++;
@@ -115,8 +113,7 @@ class _MyHomePageState extends State<HomePageRoute> {
   Future<void> _retrieveRecords() async {
     debugPrint('==========_retrieveRecords');
     if (utilities.basicCheck(widget.theSavedStatus.getUsername(),
-            widget.theSavedStatus.hashPasswd) ==
-        false) {
+            widget.theSavedStatus.hashPasswd) == false) {
       utilities.showSnackbar(_scaffoldContext, "You are not logged in.");
       return;
     }

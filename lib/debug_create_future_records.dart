@@ -31,7 +31,7 @@ Future<Map<String, Record>> createFutureRecords(
       recsToCopy.add(value);
     }
   });
-  int count = 0;
+  int dayCount = 0;
   Map<String, Record> batchOfNewFakeRecords = new Map();
   Map<String, Record> newFakeRecords = new Map();
   DateTime fakeDay = DateTime.parse(Constants.firstFakeRecordsDay);//local time zone
@@ -40,7 +40,7 @@ Future<Map<String, Record>> createFutureRecords(
   DateTime fakeTime;
   var rng = new Random();
   int recordCount = 0;
-  while (count < 1) {
+  while (dayCount < Constants.numberOfFakeDaysToMake) {
     //does this modify fakeDAte?
     fakeTime = fakeDay.add(new Duration(hours: Constants.fakeDayMorningStartTime));
 
@@ -60,7 +60,7 @@ Future<Map<String, Record>> createFutureRecords(
       fakeTime = fakeTime.add(randomDur);
       fakeRecord.endTime = fakeTime;
       fakeRecord.endTimeStr = localDateTimeToYastDate(fakeRecord.endTime);
-      String fakeKey = fakeRecord.id + (count.toString());
+      String fakeKey = fakeRecord.id + (dayCount.toString());
       fakeRecord.id = fakeKey;
       fakeRecord.yastObjectFieldsMap[Record.FIELDSMAPID] = fakeKey;
       fakeRecord.yastObjectFieldsMap[Record.FIELDSMAPTIMEFROM] =
@@ -80,7 +80,7 @@ Future<Map<String, Record>> createFutureRecords(
       batchOfNewFakeRecords[fakeKey] = fakeRecord;
     });
     fakeDay = fakeDay.add(new Duration(days: 1));
-    count++; // TODO this is probably not necessary because the putRecordsInDatabase also breaks up yast API commands into blocks of 500 or less
+    dayCount++; // TODO this is probably not necessary because the putRecordsInDatabase also breaks up yast API commands into blocks of 500 or less
   }
   if (true) {
     await putRecordsInDatabase(batchOfNewFakeRecords, selectivelyDelete: false);
