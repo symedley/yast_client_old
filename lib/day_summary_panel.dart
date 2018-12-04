@@ -88,7 +88,7 @@ class _DaySummaryPanelState extends State {
         context: _scaffoldContext,
         initialDate: _fromDate,
         firstDate: new DateTime(2018, 1, 1),
-        lastDate: new DateTime(2018, 12, 31));
+        lastDate: new DateTime.now());
     _fromDate = (tmpDate == null) ? _fromDate : tmpDate;
     theSavedStatus.setPreferredDate(_fromDate);
     _beginDaySeconds = utilities.localDateTimeToYastDate(_fromDate);
