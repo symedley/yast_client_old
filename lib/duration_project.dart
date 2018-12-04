@@ -11,5 +11,5 @@ class DurationProject {
   DurationProject(this.duration, this.project);
 
   Duration duration;
-  Project project; // TODO can i make it final?
+  final Project project; // TODO can i make it final?
 }

@@ -64,6 +64,8 @@ class _DaySummaryPanelState extends State {
 //  charts.PieChart pieChart;
   Widget pieChart;
 
+  /// Upate the top level map of project ID string to Project object
+  /// (the in-memory cache, essentially)
   void updateProjectIdToName() async {
     var idToProject = await Firestore.instance
         .collection(YastDb.DbProjectsTableName)
@@ -76,8 +78,12 @@ class _DaySummaryPanelState extends State {
 
   void _onTap() async {}
 
+  /// call _pickDate when the user clicks on the date
+  /// at the top of the window.
   void _pickDate() async {
-//    utilities.showSnackbar(_scaffoldContext, 'flat button was clicked');
+    if (false == utilities.basicCheck(theSavedStatus.getUsername(), theSavedStatus.hashPasswd)) {
+      utilities.showSnackbar(_scaffoldContext, "Did you mean to log in first?");
+    }
     var tmpDate = await showDatePicker(
         context: _scaffoldContext,
         initialDate: _fromDate,
@@ -89,8 +95,10 @@ class _DaySummaryPanelState extends State {
     DateTime tmp = _fromDate.add(Duration(hours: 24));
     _endDaySeconds = utilities.localDateTimeToYastDate(tmp);
     setState(() {
-//       this is not triggering an update TODO
-    });
+      // even if user is not logged in, this will cause the StreamBuilder
+      // to be rebuilt with a query for the new date, and that will
+      // pull any records from the database.
+     });
   }
 
   BuildContext _scaffoldContext;
@@ -102,7 +110,7 @@ class _DaySummaryPanelState extends State {
     // start a retrieve which will automatically get records around the current preferred day
     // This is an async, and it's ok for it to complete later because the Stream in the build()
     // function is listening to the same FireStore data that this retrieve call is affecting.
-    api.yastRetrieveRecords(theSavedStatus, selectivelyDelete:true);
+    api.yastRetrieveRecords(theSavedStatus, selectivelyDelete:false);
     theSavedStatus.resetProjectDurationMap();
     updateProjectIdToName();
     _scaffoldContext = context;
@@ -121,7 +129,7 @@ class _DaySummaryPanelState extends State {
           backgroundColor: DaySummaryPanel.backgroundColor,
           body: Padding(
             padding: const EdgeInsets.all(8.0),
-            child: new StreamBuilder(
+            child:  new StreamBuilder(
                 stream: Firestore.instance
                     .collection(YastDb.DbRecordsTableName)
                     .where("startTime",
@@ -298,7 +306,7 @@ class _DaySummaryPanelState extends State {
     projIdToDurProj.forEach((kv) {
       if (kv.value.duration.inMinutes > 0) {
         data.add(new PieChartData(
-            kv.value.duration.inMinutes + 0.0,
+            kv.value.duration.inMinutes - 0.00001,
             kv.value.project.name,
             theSavedStatus.getProjectColorStringFromId(kv.key)));
       }

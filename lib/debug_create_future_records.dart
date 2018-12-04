@@ -44,11 +44,13 @@ Future<Map<String, Record>> createFutureRecords(
     //does this modify fakeDAte?
     fakeTime = fakeDay.add(new Duration(hours: Constants.fakeDayMorningStartTime));
 
-    if (((recordCount % YastDb.FAKERECORDSBATCHLIMIT)==0) && (recordCount != 0)) {
-      await putRecordsInDatabase(batchOfNewFakeRecords);
-      newFakeRecords.addAll(batchOfNewFakeRecords);
-      batchOfNewFakeRecords.clear();
-    }
+    // This is unnecessary because the putRecordsInDatabase method
+    // chunks this into blocks of ~ 500 for you.
+//    if (((recordCount % YastDb.FAKERECORDSBATCHLIMIT)==0) && (recordCount != 0)) {
+//      await putRecordsInDatabase(batchOfNewFakeRecords);
+//      newFakeRecords.addAll(batchOfNewFakeRecords);
+//      batchOfNewFakeRecords.clear();
+//    }
     recsToCopy.forEach((rec) {
       recordCount++;
       Record fakeRecord = Record.clone(rec);
@@ -80,9 +82,9 @@ Future<Map<String, Record>> createFutureRecords(
       batchOfNewFakeRecords[fakeKey] = fakeRecord;
     });
     fakeDay = fakeDay.add(new Duration(days: 1));
-    dayCount++; // TODO this is probably not necessary because the putRecordsInDatabase also breaks up yast API commands into blocks of 500 or less
+    dayCount++;
   }
-  if (true) {
+  if (batchOfNewFakeRecords.isNotEmpty) {
     await putRecordsInDatabase(batchOfNewFakeRecords, selectivelyDelete: false);
     newFakeRecords.addAll(batchOfNewFakeRecords);
   }

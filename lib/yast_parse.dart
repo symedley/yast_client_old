@@ -95,13 +95,16 @@ Future<Map<String, Record>> getRecordsFrom(xml.XmlDocument xmlBody) async {
 
 Future<void> putRecordsInDatabase(Map<String, Record> recs,
     {bool selectivelyDelete = false}) async {
-  // take the things in the variables block
+  // Variable block of the yast.com xml response:
+  // Take the things in the variables block
   // that were pulled out in making the Record
   // object and put into the fieldsMap of the
-  // Record object. Then store in Firestore db.
+  // Record object as well as the appropriate
+  // fields of the object. This is to make it easy
+  // to put the fields into the Firestore database.
 
-  // Brute force delete all the old records and then just add new ones that were retrieved.
-  // if the HTTP request to yast.com failed, then we shouldn't get to this point
+  // Selectively delete the old records and then just add new ones that were retrieved.
+  // If the HTTP request to yast.com failed, then we shouldn't get to this point
   // so we won't end up with no records if data connection is lost. (I hope)
   debugPrint('==========_putRecordsInDatabase');
 
@@ -114,7 +117,7 @@ Future<void> putRecordsInDatabase(Map<String, Record> recs,
 
   WriteBatch batch = Firestore.instance.batch();
   recs.values.forEach((rec) async {
-    if ((counter % YastDb.BATCHLIMIT) == 0) {
+    if (((counter % YastDb.BATCHLIMIT) == 0) && (counter != 0)) {
       batch.commit();
       batch = Firestore.instance.batch();
       debugPrint("====mid way store records count: $counter");
@@ -131,18 +134,15 @@ Future<void> putRecordsInDatabase(Map<String, Record> recs,
     debugPrint("====final store records count: $counter");
   }
   debugPrint("============== total records count: $counter");
-  if (oldKeys.isNotEmpty) {
-    debugPrint("============== number of record keys to delete: ${oldKeys.length}");
-  } else {
-    debugPrint("============== there are no oldKeys to delete.");
-  }
 
   // the new list of records just gotten from yast.com
-  if (selectivelyDelete)
+  if (selectivelyDelete) {
+    debugPrint(
+        "============== number of record keys to delete: ${oldKeys.length}");
     await selectivelyDeleteFromFirestoreCollection(
         YastDb.DbRecordsTableName, oldKeys);
-  // TODO if saving is done in batches, when do i selectivelhy delete?
-
+  }
+    debugPrint('hi');
 } // _putRecordsInDatabase
 
 /// a List of the keys of the named collection in Firebase Cloud Firestore
@@ -201,7 +201,6 @@ Future<void> selectivelyDeleteFromFirestoreCollection(
 
 /// Brute force delete all documents in a collection of the given name.
 /// A utility function.
-/// TODO no longer needed?
 Future<void> _deleteAllDocsInCollection(String collectionName) async {
   debugPrint('-------------**********_deleteAllDocsInCollection');
   // stuff, we want to continue on.
@@ -276,7 +275,6 @@ Future<Map<String, dynamic>> _getYastObjectsFromXmlAndStoreInDb(
   // XML is missing one or more of the Projects/Folders
   // that is in the mapYastObjects.
   selectivelyDeleteFromFirestoreCollection(collectionName, oldKeys);
-  // TODO do i need to remove the oldKey pairvalues from the mapYastObjects, too?
 
   WriteBatch batch = Firestore.instance.batch();
   mapYastObjects.values.forEach((obj) async {

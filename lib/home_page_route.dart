@@ -59,7 +59,7 @@ class _MyHomePageState extends State<HomePageRoute> {
     debugPrint('============================');
     debugPrint('==========_fabButtonPressed');
     if (utilities.basicCheck(widget.theSavedStatus.getUsername(),
-            widget.theSavedStatus.hashPasswd) ==
+        widget.theSavedStatus.hashPasswd) ==
         false) {
       utilities.showSnackbar(_scaffoldContext,
           "Cannot do the FAB button because you are not logged in.");
@@ -67,7 +67,8 @@ class _MyHomePageState extends State<HomePageRoute> {
     }
     await _retrieveAllProjects().then((_) {
       _retrieveAllFolders().then((_) {
-        _retrieveRecords().then((_) {
+        _retrieveRecords()
+            .then((_) {
           _createFakes();
         });
       });
@@ -78,22 +79,33 @@ class _MyHomePageState extends State<HomePageRoute> {
 
   Future<void> _retrieveAllFolders() async {
     debugPrint('==========_retrieveAllFolders');
-
+    if (utilities.basicCheck(widget.theSavedStatus.getUsername(),
+        widget.theSavedStatus.hashPasswd) == false) {
+      utilities.showSnackbar(_scaffoldContext, "You are not logged in.");
+      return;
+    }
     YastApi api = YastApi.getApi();
     widget.theSavedStatus.counterApiCallsStarted++;
 
     Map<String, String> folderNameMap =
-        await api.yastRetrieveFolders(widget.theSavedStatus);
-
-    widget.theSavedStatus.folderIdToName =
-        folderNameMap; //TODO apply the same fix as was done on retrieve Projects to Folders
-    widget.theSavedStatus.counterApiCallsCompleted++;
+    await api.yastRetrieveFolders(widget.theSavedStatus);
+    if (folderNameMap == null) {
+      widget.theSavedStatus.folderIdToName =
+          folderNameMap;
+      widget.theSavedStatus.counterApiCallsCompleted++;
+    } else {
+      debugPrint("projectMap was null");
+    }
     debugPrint('==========END _retrieveAllFolders');
   }
 
   Future<void> _retrieveAllProjects() async {
     debugPrint('==========_retrieveAllProjects');
-
+    if (utilities.basicCheck(widget.theSavedStatus.getUsername(),
+        widget.theSavedStatus.hashPasswd) == false) {
+      utilities.showSnackbar(_scaffoldContext, "You are not logged in.");
+      return;
+    }
     YastApi api = YastApi.getApi();
     widget.theSavedStatus.counterApiCallsStarted++;
     Map<String, Project> projectMap =
@@ -103,7 +115,7 @@ class _MyHomePageState extends State<HomePageRoute> {
       widget.theSavedStatus.projects = projectMap;
       widget.theSavedStatus.counterApiCallsCompleted++;
     } else {
-      utilities.showSnackbar(_scaffoldContext, "You are not logged in.");
+      debugPrint("projectMap was null");
     }
   }
 
@@ -113,7 +125,7 @@ class _MyHomePageState extends State<HomePageRoute> {
   Future<void> _retrieveRecords() async {
     debugPrint('==========_retrieveRecords');
     if (utilities.basicCheck(widget.theSavedStatus.getUsername(),
-            widget.theSavedStatus.hashPasswd) == false) {
+        widget.theSavedStatus.hashPasswd) == false) {
       utilities.showSnackbar(_scaffoldContext, "You are not logged in.");
       return;
     }
@@ -123,10 +135,9 @@ class _MyHomePageState extends State<HomePageRoute> {
         .yastRetrieveRecords(widget.theSavedStatus, selectivelyDelete: true);
     if (recs != null) {
       widget.theSavedStatus.currentRecords =
-          recs; // TODO review this: this line could throw out some records, but thedatabase will still have those.
-    } else {
-      // TODO ? get the records from the database
+          recs; // not sure: this line could throw out some records, but thedatabase will still have those.
     }
+    // records will automatically be gotten from the database if retrieving from yast fails
 
     widget.theSavedStatus.counterApiCallsCompleted++;
 
@@ -142,12 +153,12 @@ class _MyHomePageState extends State<HomePageRoute> {
     // DEBUG: create future fake records
     DateTime startReferenceDay = DateTime.parse(Constants.referenceDay);
     String startReferenceDayStr =
-        utilities.localDateTimeToYastDate(startReferenceDay);
+    utilities.localDateTimeToYastDate(startReferenceDay);
 //  DateTime endReferenceDay = DateTime.parse('2018-10-24 23:59:00');
     DateTime endReferenceDay = DateTime(startReferenceDay.year,
         startReferenceDay.month, startReferenceDay.day, 23, 59, 0);
     String endReferenceDayStr =
-        utilities.localDateTimeToYastDate(endReferenceDay);
+    utilities.localDateTimeToYastDate(endReferenceDay);
     // Map referenceDayRecords =
     widget.theSavedStatus.counterApiCallsStarted++;
     Map<String, Record> referenceRecs = await api.yastRetrieveRecords(
@@ -157,16 +168,19 @@ class _MyHomePageState extends State<HomePageRoute> {
         selectivelyDelete: false);
     debugPrint('referenceRecs: $referenceRecs');
     widget.theSavedStatus.counterApiCallsCompleted++;
-    Map<String, Record> newFakeRecords =
-        await debug.createFutureRecords(referenceRecs);
-    // create the fake records should also store them in the database.
+    if (Constants.doCreateFakeRecords) {
+      Map<String, Record> newFakeRecords =
+      await debug.createFutureRecords(referenceRecs);
+
+      // create the fake records should also store them in the database.
 //    widget.theSavedStatus.counterApiCallsStarted++;
 //    await api.yastStoreNewRecords(widget.theSavedStatus, newFakeRecords);
 //    widget.theSavedStatus.counterApiCallsCompleted++;
-    widget.theSavedStatus.currentRecords.addAll(newFakeRecords);
-    YastResponse yr =
-        await api.yastStoreNewRecords(widget.theSavedStatus, newFakeRecords);
-    debugPrint(yr.toString());
+      widget.theSavedStatus.currentRecords.addAll(newFakeRecords);
+      YastResponse yr =
+      await api.yastStoreNewRecords(widget.theSavedStatus, newFakeRecords);
+      debugPrint(yr.toString());
+    }
   } // _createFakes
 
   void _resetButtonPressed() {
@@ -210,7 +224,8 @@ class _MyHomePageState extends State<HomePageRoute> {
     var hashPasswd = await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => LoginPage(
+          builder: (context) =>
+              LoginPage(
                 theSavedState: widget.theSavedStatus,
               ),
         ));
@@ -242,7 +257,8 @@ class _MyHomePageState extends State<HomePageRoute> {
   BuildContext _scaffoldContext;
 
   DateTime _fromDateDelete, _toDateDelete;
-  String _fromDateDeleteString = '', _toDateDeleteString = '';
+  String _fromDateDeleteString = '',
+      _toDateDeleteString = '';
 
   Future<DateTime> _pickDeleteFromDate() async {
     DateTime date = await _pickDate();
@@ -316,11 +332,11 @@ class _MyHomePageState extends State<HomePageRoute> {
 
     mapTheProjectIdAndNames();
     var loginButton =
-        FlatButton(onPressed: _loginButtonPressed, child: Text("Login"));
+    FlatButton(onPressed: _loginButtonPressed, child: Text("Login"));
     var resetButton =
-        FlatButton(onPressed: _resetButtonPressed, child: Text("Reset"));
+    FlatButton(onPressed: _resetButtonPressed, child: Text("Reset"));
     var logoutButton =
-        FlatButton(onPressed: _logoutButtonPressed, child: Text("Logout"));
+    FlatButton(onPressed: _logoutButtonPressed, child: Text("Logout"));
     var deleteRecordsButton = Container(
       padding: EdgeInsets.only(top: 10.0),
       alignment: Alignment(0.0, -1.0),
@@ -347,7 +363,9 @@ class _MyHomePageState extends State<HomePageRoute> {
             textAlign: TextAlign.right,
             softWrap: true,
             text: TextSpan(
-              style: DefaultTextStyle.of(context).style,
+              style: DefaultTextStyle
+                  .of(context)
+                  .style,
               text: 'Number of API calls started:',
             ),
           ),
@@ -359,7 +377,9 @@ class _MyHomePageState extends State<HomePageRoute> {
             textAlign: TextAlign.left,
             softWrap: true,
             text: TextSpan(
-              style: DefaultTextStyle.of(context).style,
+              style: DefaultTextStyle
+                  .of(context)
+                  .style,
               text: 'Number of API calls completed so far:',
             ),
           ),
@@ -376,7 +396,10 @@ class _MyHomePageState extends State<HomePageRoute> {
               textAlign: TextAlign.right,
               softWrap: true,
               text: TextSpan(
-                style: Theme.of(context).textTheme.display1,
+                style: Theme
+                    .of(context)
+                    .textTheme
+                    .display1,
                 text: '${widget.theSavedStatus.counterApiCallsStarted}',
               )),
         ),
@@ -387,7 +410,10 @@ class _MyHomePageState extends State<HomePageRoute> {
             textAlign: TextAlign.left,
             softWrap: true,
             text: TextSpan(
-              style: Theme.of(context).textTheme.display1,
+              style: Theme
+                  .of(context)
+                  .textTheme
+                  .display1,
               text: '${widget.theSavedStatus.counterApiCallsCompleted}',
             ),
           ),
@@ -456,7 +482,8 @@ class _MyHomePageState extends State<HomePageRoute> {
                     ),
                     Text(
                       "Oh no! An error occurred.",
-                      style: Theme.of(context)
+                      style: Theme
+                          .of(context)
                           .textTheme
                           .headline
                           .copyWith(color: Colors.white),
@@ -476,11 +503,17 @@ class _MyHomePageState extends State<HomePageRoute> {
 //            buildListView(),
             new Text(
               'Status:',
-              style: Theme.of(context).textTheme.headline,
+              style: Theme
+                  .of(context)
+                  .textTheme
+                  .headline,
             ),
             new Text(
               '${widget.theSavedStatus.message}',
-              style: Theme.of(context).textTheme.subhead,
+              style: Theme
+                  .of(context)
+                  .textTheme
+                  .subhead,
             ),
             rowCountersText,
             rowCounters,
@@ -494,11 +527,17 @@ class _MyHomePageState extends State<HomePageRoute> {
 //            buildListView(),
             new Text(
               'Status:',
-              style: Theme.of(context).textTheme.headline,
+              style: Theme
+                  .of(context)
+                  .textTheme
+                  .headline,
             ),
             new Text(
               '${widget.theSavedStatus.message}',
-              style: Theme.of(context).textTheme.subhead,
+              style: Theme
+                  .of(context)
+                  .textTheme
+                  .subhead,
             ),
             new Text(
               api_login_needed_description,
@@ -516,7 +555,10 @@ class _MyHomePageState extends State<HomePageRoute> {
             ),
             new Text(
               '${widget.theSavedStatus.counterApiCallsCompleted}',
-              style: Theme.of(context).textTheme.display1,
+              style: Theme
+                  .of(context)
+                  .textTheme
+                  .display1,
             ),
             new Text(
               api_login_failure_description,
@@ -537,7 +579,10 @@ class _MyHomePageState extends State<HomePageRoute> {
             ),
             new Text(
               '${widget.theSavedStatus.counterApiCallsCompleted}',
-              style: Theme.of(context).textTheme.display1,
+              style: Theme
+                  .of(context)
+                  .textTheme
+                  .display1,
             ),
             new Text(
               api_unknown_failure_description,

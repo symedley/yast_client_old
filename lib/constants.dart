@@ -1,14 +1,19 @@
 import 'package:flutter/widgets.dart';
 
 class Constants {
-//  static const String referenceDay = '2018-11-13';
-  static const String referenceDay = '2018-11-20';
-  static const String firstFakeRecordsDay = '2018-06-05';
+  // Fake records
+  // this is a utility to create a bunch of fake records, potentially going
+  // out into the future, to have as fake demo data.
+  // As of 12/2/18, the candybarmath@gmail.com yast account has fake records
+  // going out to June 2019, so this will be rarely needed now.
+  static const bool doCreateFakeRecords = true;
+  static const String referenceDay = '2018-11-27';
+  static const String firstFakeRecordsDay = '2018-02-01';
   static const int numberOfFakeDaysToMake = 1;
   static const int fakeDayMorningStartTime = 7;
 
   // retrieve records around the preferredDate. Go back this many days and forward this many days.
-  static const int defaultGoBackThisManyDays = 10;
+  static const int defaultGoBackThisManyDays = 5;
   static const int defaultGoForwardThisManyDays = 10;
 
   static const int HTTP_TIMEOUT = 90; //seconds

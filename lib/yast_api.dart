@@ -181,7 +181,7 @@ class YastApi {
     if (endTimeStr == null) {
       DateTime toTime;
       toTime = new DateTime(preferredDate.year, preferredDate.month, preferredDate.day)
-          .add(Duration(days: Constants.defaultGoForwardThisManyDays));
+          .add(Duration(days: Constants.defaultGoBackThisManyDays + Constants.defaultGoForwardThisManyDays));
       toDateStr = localDateTimeToYastDate(toTime);
     } else {
       toDateStr = endTimeStr;
@@ -213,7 +213,7 @@ class YastApi {
           await yastParse.putRecordsInDatabase(mapOfRecords,
               selectivelyDelete: selectivelyDelete);
         } catch (e) {
-          debugPrint("exception retrieving records");
+          debugPrint("exception retrieving records: $e");
           throw (e);
         }
       }
@@ -304,12 +304,11 @@ class YastApi {
   /// This stores them one at a time.
   Future<YastResponse> yastStoreNewRecords(
       SavedAppStatus theSavedAppStatus, Map<String, Record> newRecords) async {
-    int count = 0;
+
     YastResponse yr;
     if ((newRecords == null) || (newRecords.isEmpty)) {
       return null;
     }
-    // TODO ? chagne to batch operation?
     newRecords.forEach((k, Record record) async {
       debugPrint('storing rec: id:${record.id} comment:${record.comment}');
       var builder = new xml.XmlBuilder();
@@ -319,9 +318,7 @@ class YastApi {
       yr = await _yastSendStoreRequest(theSavedAppStatus.getUsername(),
               theSavedAppStatus.hashPasswd, _data_add, optParams)
           .timeout(Duration(seconds: Constants.HTTP_TIMEOUT));
-//      debugPrint(yr.toString());
     });
-    debugPrint(yr.toString());
     return yr;
   }
 
@@ -353,7 +350,6 @@ class YastApi {
     optionalParams ??= "";
     String xmlToSend = '<request req="' +
         httpRequestString +
-        //_data_getProjects +
         '" id="${sendCounter.toString()}">' +
         '<user><![CDATA[$username]]></user>' +
         '<hash><![CDATA[$hashPwd]]></hash>' +
