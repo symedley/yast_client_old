@@ -210,7 +210,11 @@ Future<void> selectivelyDeleteFromFirestoreCollection(
   }).whenComplete(() {
     debugPrint('records batch complete');
   });
-
+    await batch.commit().timeout(Duration(seconds: Constants.HTTP_TIMEOUT));
+  } on UnsupportedError catch (e) {
+    debugPrint("Error deleting records from Firestore $e");
+  }
+}
 
 /// Brute force delete all documents in a collection of the given name.
 /// A utility function.

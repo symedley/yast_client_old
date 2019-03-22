@@ -109,12 +109,8 @@ class SavedAppStatus {
     return min((durationOfRecord(id).inMinutes + 0.0) / 60.0, 6.0);
   }
 
-<<<<<<< HEAD
   /// Map Project ID number (as string) to Project Name.
-=======
-  /// Projects : look up by id
   /// Look up name or color and don't barf if it's not found.
->>>>>>> e1d57080f055bb72fb0bed544f26af616bbda2a4
   Map<String, Project> projects = {};
   Map<String, Duration> projectNameToDuration = {};
   Map<String, Duration> projectIdToDuration = {};
