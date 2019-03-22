@@ -10,8 +10,10 @@ import 'display_login_status.dart';
 import 'Model/yast_db.dart';
 import 'Model/project.dart';
 import 'Model/record.dart';
-import 'utilities.dart';
+import 'utilities.dart' as utilities;
+import 'yast_api.dart' ;
 import 'constants.dart';
+import 'duration_project.dart';
 
 const double barTextEdgeInsets = 12.0;
 const double barEdgeInsets = 2.0;
@@ -19,7 +21,7 @@ const double barWidth = 200.0;
 const double loginStatusWidth = 400.0;
 const double pieChartWidth = 300.0;
 const double barHeight = 30.0;
-const Color dateChooserButtonColor = Color(0xff9e9e9e); //Colors.grey[300];??
+//const Color dateChooserButtonColor = Color(0xff9e9e9e); //Colors.grey[300];??
 //const Color dummy  = Colors.grey[400];
 const String rankKeyStr = "pie";
 const String segmentKeyStr = "segment";
@@ -42,62 +44,76 @@ class DaySummaryPanel extends StatefulWidget {
 }
 
 class _DaySummaryPanelState extends State {
+  YastApi api;
+
   _DaySummaryPanelState(this.theSavedStatus) {
+    api = YastApi.getApi();
     _fromDate = theSavedStatus.getPreferredDate();
     if (_fromDate == null) {
       _fromDate = new DateTime.now();
+      _fromDate = new DateTime(_fromDate.year, _fromDate.month, _fromDate.day);
       theSavedStatus.setPreferredDate(_fromDate);
     }
+    _beginDaySeconds = utilities.localDateTimeToYastDate(_fromDate);
+    DateTime tmpDate = _fromDate.add(Duration(hours: 24));
+    _endDaySeconds = utilities.localDateTimeToYastDate(tmpDate);
   }
 
   final SavedAppStatus theSavedStatus;
 
-  charts.PieChart pieChart;
+//  charts.PieChart pieChart;
+  Widget pieChart;
 
+  /// Upate the top level map of project ID string to Project object
+  /// (the in-memory cache, essentially)
   void updateProjectIdToName() async {
     var idToProject = await Firestore.instance
         .collection(YastDb.DbProjectsTableName)
         .getDocuments();
     idToProject.documents.forEach((DocumentSnapshot ds) {
       var project = Project.fromDocumentSnapshot(ds);
-      theSavedStatus.projects[project.id] = project;
+      theSavedStatus.addProject(project);
     });
   }
 
-  /// update the pie chart with new data. Flutter charts version
-  void _cyclePieFlutterCharts(
-      charts.PieChart pieChart, List<charts.Series> chartData) {}
-
   void _onTap() async {}
 
+  /// call _pickDate when the user clicks on the date
+  /// at the top of the window.
   void _pickDate() async {
-    showSnackbar(_scaffoldContext, 'flat button was clicked');
+    if (false == utilities.basicCheck(theSavedStatus.getUsername(), theSavedStatus.hashPasswd)) {
+      utilities.showSnackbar(_scaffoldContext, "Did you mean to log in first?");
+    }
     var tmpDate = await showDatePicker(
         context: _scaffoldContext,
         initialDate: _fromDate,
         firstDate: new DateTime(2018, 1, 1),
-        lastDate: new DateTime(2018, 12, 31));
+        lastDate: new DateTime.now());
     _fromDate = (tmpDate == null) ? _fromDate : tmpDate;
     theSavedStatus.setPreferredDate(_fromDate);
+    _beginDaySeconds = utilities.localDateTimeToYastDate(_fromDate);
+    DateTime tmp = _fromDate.add(Duration(hours: 24));
+    _endDaySeconds = utilities.localDateTimeToYastDate(tmp);
     setState(() {
-//       this is not triggering an update TODO
-    });
+      // even if user is not logged in, this will cause the StreamBuilder
+      // to be rebuilt with a query for the new date, and that will
+      // pull any records from the database.
+     });
   }
 
   BuildContext _scaffoldContext;
   DateTime _fromDate;
+  String _beginDaySeconds, _endDaySeconds;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context)  {
+    // start a retrieve which will automatically get records around the current preferred day
+    // This is an async, and it's ok for it to complete later because the Stream in the build()
+    // function is listening to the same FireStore data that this retrieve call is affecting.
+    api.yastRetrieveRecords(theSavedStatus, selectivelyDelete:false);
+    theSavedStatus.resetProjectDurationMap();
     updateProjectIdToName();
     _scaffoldContext = context;
-//    List<CircularStackEntry> data = <CircularStackEntry>[
-//      new CircularStackEntry(
-//        <CircularSegmentEntry>[
-//        ],
-//        rankKey: stackKeyStr,
-//      )
-//    ];
     List<charts.Series> data;
 
     return displayLoginStatus(
@@ -113,86 +129,84 @@ class _DaySummaryPanelState extends State {
           backgroundColor: DaySummaryPanel.backgroundColor,
           body: Padding(
             padding: const EdgeInsets.all(8.0),
-            child: new StreamBuilder(
+            child:  new StreamBuilder(
                 stream: Firestore.instance
                     .collection(YastDb.DbRecordsTableName)
+                    .where("startTime",
+                        isGreaterThanOrEqualTo: _beginDaySeconds)
+//        Are compound queries not supported in Dart/Flutter?fab
+//                .where("endTime",
+//                        isLessThanOrEqualTo: _endDaySeconds")
                     .snapshots(),
                 builder: (context, snapshot) {
                   // Loading...
                   if ((!snapshot.hasData) || ((theSavedStatus.projects?.isEmpty)??false))
                     return const Text('Loading...');
 
-                  // Records, Filter records and Pie chart
-                  Set<Project> usedProjectsSet = new Set();
-                  Set<Project> projectsSet = new Set();
-                  List<DurationProject> durationProjects = new List();
+                  // FIXING the mess
+                  // copy the projects map into a map to DurationProjects.
+                  // everytime you encoutner a DB record, look up
+                  // in the map of DurationProjects and add the duration
+                  // to that entry.
+                  // Sort the map
+                  // Create pie chart data segments from the map entries
+                  // with > 0 duration.
+                  // BUT WAIT: don't keep recreating those maps
+                  // inside the stream builder.
+                  // How about a simple Map projectname->duration?
                   List<DocumentSnapshot> dss = snapshot.data.documents;
-                  List todaysRecords = new List<Record>();
-                  DateTime tmpFromdate = DateTime.parse(
-                      new DateFormat('y-MM-dd').format(_fromDate));
-                  DateTime toDate =
-                      tmpFromdate.add(new Duration(hours: 23, minutes: 59));
-//                  int i = 0;
+
+                  // Records, Filter records and Pie chart
+
                   dss.forEach((DocumentSnapshot ds) {
-                    // TODO this really should be someplace else--pulling data from database and
                     // putting in app's model.
                     var recordFromDb = Record.fromDocumentSnapshot(ds);
-                    theSavedStatus.records[recordFromDb.id] = recordFromDb;
+                    theSavedStatus.currentRecords[recordFromDb.id] =
+                        recordFromDb;
                     theSavedStatus.startTimeToRecord[recordFromDb.startTime] =
                         recordFromDb;
-                    //                    debugPrint(
-                    //                        ' --- $i ---> $tmpFromdate , ${recordFromDb.startTime} $toDate');
-//                    i++;
-                    if ((tmpFromdate.compareTo(recordFromDb.startTime) < 0) &&
-                        (toDate.compareTo(recordFromDb.endTime) > 0)) {
-                      todaysRecords.add(recordFromDb);
-                      durationProjects.add(new DurationProject(
-                          recordFromDb.duration(),
-                          theSavedStatus.projects[
-                              recordFromDb.yastObjectFieldsMap["project"]]));
-                      //TODO creat a getter and handle null
-                      usedProjectsSet
-                          .add(theSavedStatus.projects[recordFromDb.projectId]);
+                    debugPrint(
+                        'in Streambuilder, retrieved rec: ${recordFromDb.id} ${recordFromDb.comment}');
+
+                    if ((_beginDaySeconds
+                                .compareTo((recordFromDb.startTimeStr)) <
+                            0) &&
+                        (_endDaySeconds.compareTo(recordFromDb.startTimeStr)) >
+                            0) {
+                      theSavedStatus.addToProjectDuration(
+                          project:
+                              theSavedStatus.projects[recordFromDb.projectId],
+                          duration: recordFromDb.duration());
                     } else {
-                      if (theSavedStatus.projects[recordFromDb.projectId] !=
-                          null) {
-                        projectsSet.add(
-                            theSavedStatus.projects[recordFromDb.projectId]);
-                      }
+                      debugPrint(
+                          'Record ${recordFromDb.toString()} was NOT in range to be displayed. why?');
                     }
                   });
-                  // Change the set of projects into a sortable list
-                  // with one instance of each project and the total duration
-                  List<Project> usedProjectsList = usedProjectsSet.toList();
-                  List<DurationProject> orderedProjectsList = new List();
-                  usedProjectsList.forEach((proj) {
-                    orderedProjectsList.add(new DurationProject(
-                        durationProjects.where((durProj) {
-                          return proj.getIdNum() == durProj.project.getIdNum();
-                        }).reduce((dur1, dur2) {
-                          return DurationProject(
-                              dur1.duration + dur2.duration, dur1.project);
-                        }).duration,
-                        proj));
-                  });
+                  //Sort the duration projects
+                  List<MapEntry<String, DurationProject>> sorted =
+                      theSavedStatus.sortedProjectDurations();
 
-                  projectsSet.removeAll(usedProjectsSet);
-                  projectsSet.forEach((proj) {
-                    orderedProjectsList
-                        .add(new DurationProject(new Duration(hours: 0), proj));
-                  });
-
-                  orderedProjectsList
-                      .sort((a, b) => b.duration.compareTo(a.duration));
-                  // circularSegmentEnties is passed by reference and set in the createPieSegments method
-                  // circularSegmentEnties not used anymore
-                  data = createPieSegmentsChartsFlutter(
-                      durationProjects, theSavedStatus);
+                  data = createPieSegmentsChartsFlutter(sorted, theSavedStatus);
 //                  if (pieChart == null) {
-                  pieChart = createPieChartsFlutter(data);
-//                  } else {
-//                    _cyclePieFlutterCharts(pieChart, data);
-//                  }
+                  if (data != null) {
+                    pieChart = createPieChartsFlutter(data);
+                  } else {
+                    // draw a circle instead f a pie chart
+                    pieChart = new Container(
+                      width: Constants.EMPTYPIECIRCLEWIDTH,
+                      height: Constants.EMPTYPIECIRCLEWIDTH,
+                      decoration: new BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment(0.0, 0.0),
+                      child: Text(
+                        Constants.emptyPieChartMessage,
+                        style: Theme.of(context).textTheme.caption,
+                        textAlign: TextAlign.center,
+                      ),
+                    );
+                  }
                   return Column(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
@@ -205,7 +219,7 @@ class _DaySummaryPanelState extends State {
                           height: barHeight,
                           child: FlatButton(
                             onPressed: _pickDate,
-                            color: dateChooserButtonColor,
+                            color: Constants.dateChooserButtonColor,
                             child: Text(
                               DateFormat.MMMMd().format(_fromDate),
                               style: TextStyle(color: Colors.black),
@@ -215,8 +229,8 @@ class _DaySummaryPanelState extends State {
                         //
                         // Pie chart
                         Container(
-                          height: 300.0,
-                          width: 300.0,
+                          height: Constants.PIECONTAINERWIDTH,
+                          width: Constants.PIECONTAINERWIDTH,
                           child: Center(
                             child: pieChart,
                           ),
@@ -226,13 +240,15 @@ class _DaySummaryPanelState extends State {
                         // Column of project rectangle bars
                         Expanded(
                           child: new ListView.builder(
-                            itemCount: orderedProjectsList.length,
+                            itemCount: sorted.length,
+                            //orderedProjectsList.length,
                             shrinkWrap: true,
                             itemExtent: 35.0,
                             itemBuilder: ((context, index) {
                               //
                               // one Project rectangle bar
-                              return projectBar(orderedProjectsList[index]);
+                              // this looks really inefficient
+                              return projectBar(sorted[index]);
                             }),
                           ),
                         )
@@ -247,15 +263,16 @@ class _DaySummaryPanelState extends State {
 // only the hours and minutes part
   String formatDuration(Duration duration) {
     final formatter = new NumberFormat("##");
+    final formatter2 = new NumberFormat("00");
     int hours = duration.inHours % Duration.hoursPerDay;
     int minutes = duration.inMinutes % Duration.minutesPerHour;
-    return formatter.format(hours) + ":" + formatter.format(minutes);
+    return formatter.format(hours) + ":" + formatter2.format(minutes);
   }
 
   /// Create pie using flutter_charts
 
   charts.PieChart createPieChartsFlutter(List<charts.Series> data) {
-    return new charts.PieChart(data,
+    var pieChart = new charts.PieChart(data,
         animate: true,
         // Add an [ArcLabelDecorator] configured to render labels outside of the
         // arc with a leader line.
@@ -268,66 +285,67 @@ class _DaySummaryPanelState extends State {
         //          insideLabelStyleSpec: new charts.TextStyleSpec(...),
         //          outsideLabelStyleSpec: new charts.TextStyleSpec(...)),
         defaultRenderer: new charts.ArcRendererConfig(
-            arcWidth: 60,
-            arcRendererDecorators: [new charts.ArcLabelDecorator()]));
-
-//    defaultRenderer: new charts.ArcRendererConfig(arcRendererDecorators: [
-//          new charts.ArcLabelDecorator(
-//              labelPosition: charts.ArcLabelPosition.auto,
-//            insideLabelStyleSpec:
-//            common.TextStyleSpec(
-//                fontFamily: 'Arial'
-//                ,color: common.Color.fromHex(code:  'xff4444ff')),
-//              outsideLabelStyleSpec:
-//                  common.TextStyleSpec(
-//                      fontFamily: 'Arial'
-//                      ,color: common.Color.black))
-//        ]));
+//                arcRatio: 0.999,
+            arcWidth: 150,
+            arcRendererDecorators: [
+              new charts.ArcLabelDecorator(
+                  insideLabelStyleSpec: new charts.TextStyleSpec(
+                      color: common.Color.black, fontSize: 12),
+                  outsideLabelStyleSpec: new charts.TextStyleSpec(
+                      color: common.Color.black, fontSize: 12))
+            ]));
+    return pieChart;
   }
 
   /// Create pie segments from the DurationProject data, which should be sorted
   /// use flutter_charts
   List<charts.Series> createPieSegmentsChartsFlutter(
-      durProjectsList, theSavedStatus) {
+      List<MapEntry<String, DurationProject>> projIdToDurProj, theSavedStatus) {
     // First, change the usedProjectsList into simpler data
     List<PieChartData> data = new List();
-    durProjectsList.forEach((dp) {
-      data.add(new PieChartData(dp.duration.inMinutes + 0.0, dp.project.name,
-          dp.project.primaryColor));
+    projIdToDurProj.forEach((kv) {
+      if (kv.value.duration.inMinutes > 0) {
+        data.add(new PieChartData(
+            kv.value.duration.inMinutes - 0.00001,
+            kv.value.project.name,
+            theSavedStatus.getProjectColorStringFromId(kv.key)));
+      }
     });
+    var retval;
     if (data.isEmpty) {
-      data.add(new PieChartData(100.0, "none", "#225599"));
+      retval = null;
+    } else {
+      retval = [
+        new charts.Series<PieChartData, int>(
+          id: 'Where time went',
+          domainFn: (PieChartData pcd, _) => (pcd.getDuration().round()),
+          measureFn: (PieChartData pcd, _) => (pcd.getDuration().round()),
+          // dp.getDurationNumber()
+          data: data,
+          // Set a label accessor to control the text of the arc label.
+          labelAccessorFn: (PieChartData row, _) => '${row.getProjectName()}',
+
+          outsideLabelStyleAccessorFn: _outsideLabelStyleAccessorFn,
+          insideLabelStyleAccessorFn: _insideLabelStyleAccessorFn,
+          fillColorFn: (_, __) => common.Color.fromHex(code: '#00FF00'),
+          // common.Color.black ,
+          colorFn: (pieChartData, index) => common.Color.fromHex(
+              code: pieChartData
+                  .colorStr), // common.Color.fromHex(code: '#00FF00'),     // ('#00FF00'),
+        )
+      ];
     }
-    var retval = [
-      new charts.Series<PieChartData, int>(
-        id: 'Where time went',
-        domainFn: (PieChartData pcd, _) => (pcd.getDuration().round()),
-        measureFn: (PieChartData pcd, _) => (pcd.getDuration().round()),
-        // dp.getDurationNumber()
-        data: data,
-        // Set a label accessor to control the text of the arc label.
-        labelAccessorFn: (PieChartData row, _) =>
-            '${row.getProjectName()}:\n${row.getDuration()}',
-        outsideLabelStyleAccessorFn: _outsideLabelStyleAccessorFn,
-        insideLabelStyleAccessorFn: _insideLabelStyleAccessorFn,
-        fillColorFn: (_, __) => common.Color.fromHex(code: '#00FF00'),
-        // common.Color.black ,
-        colorFn: (pieChartData, index) => common.Color.fromHex(
-            code: pieChartData
-                .colorStr), // common.Color.fromHex(code: '#00FF00'),     // ('#00FF00'),
-      )
-    ];
     return retval;
   }
 
   common.TextStyleSpec _outsideLabelStyleAccessorFn(PieChartData pcd, int i) {
-    debugPrint('_outsideLabelStyle called');
-    return common.TextStyleSpec(fontFamily: 'Arial', fontSize: 12, color: common.Color.black);
+    return common.TextStyleSpec(
+        fontFamily: 'Arial', fontSize: 12, color: common.Color.black);
   }
 
   common.TextStyleSpec _insideLabelStyleAccessorFn(PieChartData pcd, int i) {
-    debugPrint('_insideLabelStyle called');
-    return common.TextStyleSpec(fontFamily: 'Arial', fontSize: 12, color: common.Color.white);
+    return common.TextStyleSpec(
+        fontFamily: 'Arial', fontSize: 12, color: common.Color.white);
   }
 
   Text textForOneProjectColorBar(Duration dura) {
@@ -336,15 +354,15 @@ class _DaySummaryPanelState extends State {
         : "");
   }
 
-  Container projectBar(DurationProject theProjectWithDuration) {
+  Container projectBar(MapEntry<String, DurationProject> projectIdToProjDur) {
+    //}  DurationProject theProjectWithDuration) {
     return Container(
       constraints: BoxConstraints.expand(width: loginStatusWidth),
       padding: new EdgeInsets.all(barEdgeInsets),
       child: InkWell(
         borderRadius: BorderRadius.circular((Constants.BORDERRADIUS) / 4),
-        // TODO fix these ink splash colors
-        highlightColor: Colors.yellow,
-        splashColor: Colors.white,
+        highlightColor: Theme.of(context).highlightColor,
+        splashColor: Theme.of(context).highlightColor,
         onTap: _onTap,
         child: Row(children: [
           Container(
@@ -354,7 +372,9 @@ class _DaySummaryPanelState extends State {
                 decoration: BoxDecoration(
                   borderRadius:
                       BorderRadius.all(Radius.circular(Constants.BORDERRADIUS)),
-                  color: hexToColor(theProjectWithDuration.project.primaryColor,
+                  color: utilities.hexToColor(
+                      theSavedStatus
+                          .getProjectColorStringFromId(projectIdToProjDur.key),
                       transparency: 0xff0000000),
                 ),
                 alignment: Alignment(1.0, 0.0),
@@ -364,25 +384,19 @@ class _DaySummaryPanelState extends State {
                   padding: EdgeInsets.only(
                       left: barTextEdgeInsets, right: barTextEdgeInsets),
                   child: textForOneProjectColorBar(
-                      theProjectWithDuration.duration),
+                      projectIdToProjDur.value.duration),
                 )),
           ),
           Flexible(
               child: Text(
-            " ${theProjectWithDuration.project.name}",
-            overflow: TextOverflow.ellipsis,
+            " ${projectIdToProjDur.value.project.name}",
+//                overflow: TextOverflow.ellipsis,
+            overflow: TextOverflow.fade,
           ))
         ]),
       ),
     );
   } // projectBar
-}
-
-class DurationProject {
-  DurationProject(this.duration, this.project);
-
-  Duration duration;
-  Project project;
 }
 
 class PieChartData {

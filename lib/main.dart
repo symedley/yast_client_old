@@ -49,12 +49,13 @@ class _MyHomePageState extends State<MyHomePage> {
 
   static String tag = "my-app";
 
-  SavedAppStatus _currentAppStatus;
+  static SavedAppStatus _currentAppStatus;
 
   final routes = <String, WidgetBuilder>{
 //    LoginPage.tag: (context) => LoginPage(),
-    HomePageRoute.tag: (context) => HomePageRoute(),
-    };
+
+    HomePageRoute.tag: (context) => HomePageRoute(theSavedStatus: _currentAppStatus,),
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -71,9 +72,16 @@ class _MyHomePageState extends State<MyHomePage> {
           accentColor: Colors.blueAccent,
           errorColor: Colors.red[700],
           buttonColor: Colors.lightBlueAccent,
+          // TODO fix these ink splash colors
+          highlightColor: Theme.of(context).highlightColor,
+          splashColor: Theme.of(context).splashColor,
           textTheme: TextTheme(
             body1: TextStyle(
               fontSize: 16.0,
+            ),
+            caption: TextStyle(
+              fontSize: 12.0,
+              color: Colors.grey,
             )
       ),
              
@@ -83,7 +91,6 @@ class _MyHomePageState extends State<MyHomePage> {
                   Radius.circular(32.0),
                 )),
           ),
-
         ),
         routes: routes,
         home: DefaultTabController(
@@ -113,10 +120,6 @@ class _MyHomePageState extends State<MyHomePage> {
               AllFoldersPanel(
                   // key: key,
                   theSavedStatus: _currentAppStatus),
-//              DatabasePanel(
-//                 key: key,
-//                title: "Database panel",
-//                )
             ]),
           ),
         ));

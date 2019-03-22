@@ -205,11 +205,9 @@ class _LoginPageState extends State<LoginPage> {
 
     String retval = await api.yastLogin(username, inputPasswd);
     if (retval != null) {
-      debugPrint("in attemptLogin, retval = $retval");
       return retval;
     } else {
       debugPrint("Failed: in attemptLogin, retval = $retval");
-
       return null;
     }
   }
