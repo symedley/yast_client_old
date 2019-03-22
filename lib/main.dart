@@ -23,18 +23,19 @@ class _MyAppState extends State<MyApp> {
       theme: new ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: new MyHomePage(title: 'Flutter Demo Home Page'),
+      home: MyHomePage(title: 'Yast Client Home Page'),
     );
   }
 }
 
+// Home Page of the app is currently some debugging info and a link to a login page.
 class MyHomePage extends StatefulWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
 
   final String title;
 
   @override
-  _MyHomePageState createState() => new _MyHomePageState();
+  _MyHomePageState createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
@@ -53,7 +54,7 @@ class _MyHomePageState extends State<MyHomePage> {
   final routes = <String, WidgetBuilder>{
 //    LoginPage.tag: (context) => LoginPage(),
     HomePageRoute.tag: (context) => HomePageRoute(),
-  };
+    };
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +75,8 @@ class _MyHomePageState extends State<MyHomePage> {
             body1: TextStyle(
               fontSize: 16.0,
             )
-          ),
+      ),
+             
           buttonTheme: ButtonThemeData(
             shape: RoundedRectangleBorder(borderRadius:
                 BorderRadius.all(
@@ -92,13 +94,13 @@ class _MyHomePageState extends State<MyHomePage> {
               child: AppBar(
                 primary: true,
                 bottom: TabBar(tabs: myTabs),
-              ),
+            ),
             ),
             body: TabBarView(children: [
               HomePageRoute(
                 title: 'Yast Home Page',
                 theSavedStatus: _currentAppStatus,
-              ),
+        ),
               DaySummaryPanel(
                 // key: key,
                 title: "Timeline",

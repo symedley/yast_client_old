@@ -151,7 +151,7 @@ class YastApi {
           retval = await yastParse.getRecordsFrom(yr.body);
           await yastParse.putRecordsInDatabase(retval);
         } catch (e) {
-          debugPrint("exception retrieving records");
+          debugPrint("exception storing? records");
           throw (e);
         }
       }

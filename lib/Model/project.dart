@@ -1,5 +1,5 @@
 import 'package:xml/xml.dart';
-import 'package:xml/xml/nodes/element.dart';
+import 'package:xml/src/xml/nodes/element.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'yast_object.dart';
 

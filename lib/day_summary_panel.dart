@@ -119,7 +119,7 @@ class _DaySummaryPanelState extends State {
                     .snapshots(),
                 builder: (context, snapshot) {
                   // Loading...
-                  if ((!snapshot.hasData) || (theSavedStatus.projects.isEmpty))
+                  if ((!snapshot.hasData) || ((theSavedStatus.projects?.isEmpty)??false))
                     return const Text('Loading...');
 
                   // Records, Filter records and Pie chart

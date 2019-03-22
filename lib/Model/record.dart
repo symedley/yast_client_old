@@ -1,4 +1,4 @@
-import 'package:xml/xml/nodes/element.dart';
+import 'package:xml/src/xml/nodes/element.dart';
 import 'package:flutter/foundation.dart';
 import 'package:xml/xml.dart' as xml;
 import 'yast_object.dart';

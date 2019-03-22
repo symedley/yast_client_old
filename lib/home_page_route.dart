@@ -48,7 +48,7 @@ class _MyHomePageState extends State<HomePageRoute> {
     super.dispose();
   }
 
-  /// Use this a s shortcut to test whatever feature I'm
+  /// Use this a shortcut to test whatever feature I'm
   /// currently working on.
   String _sDoSomething = 'retrieve records';
 
@@ -170,7 +170,7 @@ class _MyHomePageState extends State<HomePageRoute> {
   }
 
   void mapTheProjectIdAndNames() async {
-    if (widget.theSavedStatus.projects.isEmpty) {
+    if ((widget.theSavedStatus.projects?.isEmpty) ?? false ){
       // build the projectidmap
       widget.theSavedStatus.projects = await getProjectIdMapFromDb();
     }

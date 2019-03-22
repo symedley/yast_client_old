@@ -88,7 +88,6 @@ class SavedAppStatus {
   }
 
   /// Map Project ID number (as string) to Project Name.
-//  Map<String, String> projectIdToName = {};
   Map<String, Project> projects = {};
 
   String getProjectNameFromId(String id) {

@@ -127,11 +127,11 @@ Future<void> putRecordsInDatabase(Map<String, dynamic> recs) async {
 
   _selectivelyDeleteFromCollection(YastDb.DbRecordsTableName, oldKeys );
 
-  await batch
+  await (((batch
       .commit()
-      .timeout(Duration(seconds: Constants.HTTP_TIMEOUT))
-      .then((it) {
-    debugPrint('records batch result $it');
+      .timeout(Duration(seconds: Constants.HTTP_TIMEOUT)))))
+      .then((void it) {
+    debugPrint('records batch result ');
   }).whenComplete(() {
     debugPrint('records batch complete');
   });
@@ -171,11 +171,11 @@ Future<void> _selectivelyDeleteFromCollection(String collectionName, Set<String>
 
       counter++;
     });
-  await batch
+  await (batch
       .commit()
-      .timeout(Duration(seconds: Constants.HTTP_TIMEOUT))
-      .then((it) {
-    debugPrint('records batch result $it');
+      .timeout(Duration(seconds: Constants.HTTP_TIMEOUT)) )
+      .then((void it) {
+    debugPrint('records batch result ');
   }).whenComplete(() {
     debugPrint('records batch complete');
   });
@@ -271,8 +271,8 @@ Future<Map<String, dynamic>> _getYastObjectsFrom(
       YastObject.FIELDSMAPFLAGS: obj.flags,
     });
   });
-  await batch.commit().timeout(Duration(seconds: 30)).then((it) {
-    debugPrint('batch $it');
+  await ( batch.commit().timeout(Duration(seconds: 30))).then((void it) {
+    debugPrint('batch done ');
   }).whenComplete(() {
     debugPrint('batch complete');
   });

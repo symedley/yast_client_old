@@ -1,7 +1,6 @@
 # Google
 google-services.json
 GoogleService-Info.plist
-
 Assets.xcassets
 ios/Runner/AppDelegate.m
 ios/Runner/AppDelegate.h
@@ -9,7 +8,6 @@ ios/Runner
 ios/Flutter
 ios/Runner.xcodeproj
 ios/Runner.xcworkspace
-
 # Miscellaneous
 tmp.txt
 *.class
@@ -39,7 +37,7 @@ tmp.txt
 .packages
 .pub-cache/
 .pub/
-build/
+/build/
 
 # Android related
 **/android/**/gradle-wrapper.jar
