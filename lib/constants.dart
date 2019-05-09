@@ -4,7 +4,7 @@ class Constants {
   // Fake records
   // this is a utility to create a bunch of fake records, potentially going
   // out into the future, to have as fake demo data.
-  // As of 12/2/18, the candybarmath@gmail.com yast account has fake records
+  // As of 12/2/18, the candybarmath yast account has fake records
   // going out to June 2019, so this will be rarely needed now.
   static const bool doCreateFakeRecords = true;
   static const String referenceDay = '2018-11-27';
