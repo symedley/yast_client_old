@@ -1,6 +1,6 @@
 ﻿
 
-# yast_client_v2
+# yast_client_old
 
 ***See Yast Client v3***
 
